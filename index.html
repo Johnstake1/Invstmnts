@@ -1,0 +1,1604 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Investment Master Dashboard</title>
+<style>
+  :root{
+    --page:#f9f9f7; --surface:#fcfcfb; --surface-2:#f3f3f0;
+    --ink:#0b0b0b; --ink-2:#52514e; --muted:#898781;
+    --grid:#e1e0d9; --axis:#c3c2b7; --border:rgba(11,11,11,0.10);
+    --good:#006300; --bad:#c0392b;
+    --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100;
+    --s5:#e87ba4; --s6:#008300; --s7:#4a3aa7; --s8:#e34948; --s9:#8a5a2b;
+    --accent:#1F2A44;
+    color-scheme:light;
+  }
+  html[data-theme="dark"]{
+    --page:#0d0d0d; --surface:#1a1a19; --surface-2:#232322;
+    --ink:#ffffff; --ink-2:#c3c2b7; --muted:#898781;
+    --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,0.10);
+    --good:#0ca30c; --bad:#e66767;
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500;
+    --s5:#d55181; --s6:#008300; --s7:#9085e9; --s8:#e66767; --s9:#b98a4e;
+    --accent:#c9d4ea;
+    color-scheme:dark;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--page);color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",sans-serif;font-size:14px;line-height:1.45}
+  a{color:var(--s1)}
+  .wrap{max-width:1280px;margin:0 auto;padding:18px 20px 60px}
+  header.top{display:flex;flex-wrap:wrap;align-items:center;gap:14px;justify-content:space-between;margin-bottom:6px}
+  h1{font-size:20px;margin:0;letter-spacing:.2px}
+  .sub{color:var(--muted);font-size:12px;margin-top:2px}
+  .controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+  .seg{display:inline-flex;background:var(--surface-2);border:1px solid var(--border);border-radius:9px;overflow:hidden}
+  .seg button{border:0;background:transparent;color:var(--ink-2);padding:6px 12px;font-size:13px;cursor:pointer;font-weight:600}
+  .seg button.active{background:var(--s1);color:#fff}
+  select,.btn{background:var(--surface-2);border:1px solid var(--border);color:var(--ink);border-radius:9px;padding:6px 10px;font-size:13px;cursor:pointer}
+  .btn:hover{border-color:var(--s1)}
+  .fxbar{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;background:var(--surface);border:1px solid var(--border);
+    border-radius:12px;padding:8px 14px;margin:10px 0 16px;font-size:12.5px}
+  .fxbar b{font-variant-numeric:tabular-nums}
+  .dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:5px;vertical-align:middle}
+  nav.tabs{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:16px;border-bottom:1px solid var(--border)}
+  nav.tabs button{border:0;background:transparent;color:var(--ink-2);padding:9px 13px;font-size:13.5px;cursor:pointer;
+    border-bottom:2px solid transparent;font-weight:600}
+  nav.tabs button.active{color:var(--ink);border-bottom-color:var(--s1)}
+  .view{display:none}
+  .view.active{display:block}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:18px}
+  .kpi{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px}
+  .kpi .lbl{color:var(--muted);font-size:11.5px;text-transform:uppercase;letter-spacing:.4px}
+  .kpi .val{font-size:24px;font-weight:700;margin-top:6px;font-variant-numeric:tabular-nums}
+  .kpi .sub2{font-size:12px;color:var(--ink-2);margin-top:3px;font-variant-numeric:tabular-nums}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px}
+  @media(max-width:900px){.grid2{grid-template-columns:1fr}}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px}
+  .card h3{margin:0 0 12px;font-size:14px;font-weight:700}
+  .card h3 .hint{font-weight:400;color:var(--muted);font-size:11.5px;margin-left:6px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:right;padding:7px 9px;border-bottom:1px solid var(--grid);font-variant-numeric:tabular-nums;white-space:nowrap}
+  th:first-child,td:first-child{text-align:left;font-variant-numeric:normal}
+  th{color:var(--muted);font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.3px;cursor:default}
+  tbody tr:hover{background:var(--surface-2)}
+  tfoot td{font-weight:700;border-top:2px solid var(--axis);border-bottom:0}
+  .pos{color:var(--good)} .neg{color:var(--bad)}
+  .tblwrap{overflow-x:auto}
+  .legend{display:flex;flex-wrap:wrap;gap:10px 16px;margin-top:12px;font-size:12px}
+  .legend span{display:inline-flex;align-items:center;gap:6px;color:var(--ink-2)}
+  .legend i{width:11px;height:11px;border-radius:3px;display:inline-block}
+  .muted{color:var(--muted)}
+  .pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;background:var(--surface-2);border:1px solid var(--border)}
+  .barrow{display:grid;grid-template-columns:130px 1fr 90px;align-items:center;gap:10px;margin:7px 0;font-size:12.5px}
+  .bartrack{background:var(--surface-2);border-radius:5px;height:16px;overflow:hidden}
+  .barfill{height:100%;border-radius:5px}
+  .coupon{display:grid;grid-template-columns:1fr auto auto;gap:8px;padding:6px 0;border-bottom:1px solid var(--grid);font-size:12.5px}
+  .note{font-size:11.5px;color:var(--muted);margin-top:10px;line-height:1.5}
+  .tag{font-size:10.5px;color:var(--muted);border:1px solid var(--border);border-radius:5px;padding:1px 5px;margin-left:6px}
+  .isin{font-size:10.5px;color:var(--muted);font-variant-numeric:tabular-nums;letter-spacing:.3px}
+  .ops{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;align-items:end}
+  .ops label{display:block;font-size:11.5px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.3px}
+  .ops input,.ops select{width:100%;background:var(--surface-2);border:1px solid var(--border);color:var(--ink);border-radius:8px;padding:7px 9px;font-size:13px}
+  .btn.primary{background:var(--s1);color:#fff;border-color:var(--s1);font-weight:600}
+  .btn.ghost{background:transparent}
+  .row-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .chipbtn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);background:var(--surface-2);color:var(--ink-2);
+    border-radius:999px;padding:4px 10px;font-size:12px;cursor:pointer;opacity:.5}
+  .chipbtn.on{opacity:1;color:var(--ink);border-color:var(--s1)}
+  .chipbtn i{width:10px;height:10px;border-radius:3px;display:inline-block}
+  svg text{fill:var(--ink-2)}
+  .center{display:flex;align-items:center;justify-content:center;gap:18px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+
+<div id="__lock" style="position:fixed;inset:0;z-index:9999;background:#0d0d0d;color:#eee;
+  display:flex;align-items:center;justify-content:center;font-family:system-ui,-apple-system,'Segoe UI',sans-serif">
+  <form onsubmit="return __unlock(event)" style="text-align:center;max-width:340px;padding:24px">
+    <div style="font-size:20px;font-weight:700;margin-bottom:6px">Investment Dashboard</div>
+    <div style="font-size:13px;color:#9a9a9a;margin-bottom:18px">Enter your passphrase to decrypt</div>
+    <input id="__pw" type="password" autocomplete="current-password" autofocus
+      style="width:100%;padding:11px 12px;border-radius:10px;border:1px solid #333;background:#1a1a1a;color:#fff;font-size:15px">
+    <button style="margin-top:12px;width:100%;padding:11px;border:0;border-radius:10px;background:#2a78d6;color:#fff;font-weight:600;font-size:15px;cursor:pointer">Unlock</button>
+    <div id="__err" style="color:#e66767;font-size:12.5px;margin-top:10px;min-height:16px"></div>
+    <div style="color:#6a6a6a;font-size:11px;margin-top:14px">Your data is AES-256 encrypted. It is decrypted only in this browser — nothing is sent anywhere.</div>
+  </form>
+</div>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Investment Master Dashboard</h1>
+      <div class="sub" id="asof"></div>
+    </div>
+    <div class="controls">
+      <div class="seg" id="ccySeg">
+        <button data-ccy="USD" class="active">USD</button>
+        <button data-ccy="EUR">EUR</button>
+        <button data-ccy="ARS">ARS</button>
+      </div>
+      <select id="acctSel" title="Filter all views by bank / broker account"></select>
+      <select id="arsSel" title="Which ARS/USD rate to use for conversions">
+        <option value="oficial">ARS: Oficial</option>
+        <option value="mayorista">ARS: Mayorista</option>
+        <option value="mep" selected>ARS: MEP</option>
+        <option value="ccl">ARS: CCL</option>
+        <option value="blue">ARS: Blue</option>
+      </select>
+      <button class="btn" id="refreshBtn">↻ Refresh live FX</button>
+      <button class="btn" id="themeBtn" title="Toggle light/dark">◑</button>
+    </div>
+  </header>
+
+  <div class="fxbar" id="fxbar"></div>
+
+  <nav class="tabs" id="tabs"></nav>
+
+  <div id="views"></div>
+
+  <div class="note" id="footnote"></div>
+</div>
+
+<script type="text/plain" id="__appcode">
+let DATA = window.__DATA;
+const ORIGINAL_DATA = JSON.parse(JSON.stringify(DATA));
+
+/* ---------------- state ---------------- */
+const state = {
+  ccy: 'USD',
+  account: 'ALL',
+  arsRate: DATA.fx.ars_rate_selected || 'mep',
+  fx: JSON.parse(JSON.stringify(DATA.fx)),
+  fxSource: 'seed',
+  fxDate: DATA.meta.notes.includes('2026-07-29') ? '2026-07-29 (seed)' : 'seed'
+};
+
+const CCY_SYM = {USD:'$', EUR:'€', ARS:'$'};
+const CLASS_COLORS = {
+  'Global Equities':'--s1','Argentine Equities':'--s2','Funds':'--s9','International Bonds':'--s3',
+  'Argentine Bonds':'--s4','Structured Products':'--s5','Options':'--s6',
+  'Futures':'--s7','Cash':'--s8'
+};
+
+/* ---------------- fx helpers ---------------- */
+function perUSD(ccy){
+  if(ccy==='USD') return 1;
+  if(ccy==='EUR') return state.fx.EUR_per_USD;
+  if(ccy==='GBP') return state.fx.GBP_per_USD;
+  if(ccy==='ARS') return state.fx.ars_rates[state.arsRate];
+  return 1;
+}
+const toUSD = (amt,ccy)=> amt / perUSD(ccy);
+const fromUSD = (usd,ccy)=> usd * perUSD(ccy);
+function disp(usd){ return fromUSD(usd, state.ccy); }
+/* convert a USD amount into the display currency using a SPECIFIC fx snapshot
+   (so historical values use the rate that applied on their own date) */
+function perUSDat(fxObj,ccy){
+  if(ccy==='USD') return 1;
+  if(ccy==='EUR') return fxObj.EUR_per_USD;
+  if(ccy==='ARS') return (fxObj.ars_rates||{})[state.arsRate];
+  return 1;
+}
+function dispAt(usd,fxObj){ return usd * perUSDat(fxObj, state.ccy); }
+function fmt(usd, dec){
+  const v = disp(usd);
+  const d = dec===undefined ? (state.ccy==='ARS'?0:2) : dec;
+  const s = v<0?'-':'';
+  return s + CCY_SYM[state.ccy] + Math.abs(v).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
+}
+function fmtNum(v,d){d=d||0;return v.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});}
+function pct(x){return (x*100).toFixed(1)+'%';}
+
+/* ---------------- dates / accrual ---------------- */
+const MS_DAY = 86400000;
+function today(){ const d=new Date(); return new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate())); }
+function pdate(s){ const [y,m,d]=s.split('-').map(Number); return new Date(Date.UTC(y,m-1,d)); }
+function daysBetween(a,b){ return Math.round((b-a)/MS_DAY); }
+function daysSince(s){ return daysBetween(pdate(s), today()); }
+function daysUntil(s){ return daysBetween(today(), pdate(s)); }
+
+/* ---------------- computed models ---------------- */
+function equities(list){
+  let rows=list.map(p=>{
+    const mvC=p.qty*p.price, costC=p.qty*p.avg_cost;
+    const mvU=toUSD(mvC,p.ccy), costU=toUSD(costC,p.ccy);
+    const soy=p.price_soy||p.price;
+    return {...p, mvC, mvU, pnlU:mvU-costU, pnlPct: costU? (mvU-costU)/costU:0,
+      ytd: soy? (p.price-soy)/soy : 0};
+  });
+  const tot=rows.reduce((s,r)=>s+r.mvU,0);
+  rows.forEach(r=>r.w= tot? r.mvU/tot:0);
+  return {rows, tot, pnl:rows.reduce((s,r)=>s+r.pnlU,0)};
+}
+/* Yield-to-maturity (bisection) + Macaulay/modified duration, even-period approximation */
+function bondAnalytics(b){
+  const price=b.face*b.price_pct/100;
+  const f=b.freq_per_yr, cpn=b.face*(b.coupon_pct/100)/f;
+  const yrs=Math.max(daysUntil(b.maturity),1)/365.25;
+  const n=Math.max(1,Math.round(yrs*f));
+  const pv=(y)=>{ let s=0; const per=y/f; for(let k=1;k<=n;k++) s+=cpn/Math.pow(1+per,k); s+=b.face/Math.pow(1+per,n); return s; };
+  let lo=-0.95, hi=3.0, y=0.05;
+  if(pv(lo)<price){ y=lo; } else if(pv(hi)>price){ y=hi; }
+  else { for(let i=0;i<80;i++){ y=(lo+hi)/2; (pv(y)>price)? lo=y : hi=y; } }
+  const per=y/f; let mac=0; for(let k=1;k<=n;k++) mac+=(k/f)*(cpn/Math.pow(1+per,k)); mac+=(n/f)*(b.face/Math.pow(1+per,n));
+  mac=price? mac/price:0; const mod=mac/(1+per);
+  return {ytm:y, dur:mac, mdur:mod};
+}
+function bonds(list){
+  let rows=list.map(b=>{
+    const cleanC=b.face*b.price_pct/100;
+    const accC=b.face*(b.coupon_pct/100)*daysSince(b.last_coupon)/365;
+    const cost=b.cost_pct!=null?b.cost_pct:b.price_pct;
+    const pnlU=toUSD(b.face*(b.price_pct-cost)/100, b.ccy);
+    const soy=b.price_pct_soy||b.price_pct;
+    const an=bondAnalytics(b);
+    return {...b, cleanC, accC, dirtyU:toUSD(cleanC+accC,b.ccy), accU:toUSD(accC,b.ccy),
+      cleanU:toUSD(cleanC,b.ccy), costU:toUSD(b.face*cost/100,b.ccy), pnlU,
+      dToNext:daysUntil(b.next_coupon),
+      nextAmtU:toUSD(b.face*(b.coupon_pct/100)/b.freq_per_yr,b.ccy),
+      ytm:an.ytm, dur:an.dur, mdur:an.mdur, ytd: soy? (b.price_pct-soy)/soy : 0};
+  });
+  const tot=rows.reduce((s,r)=>s+r.dirtyU,0);
+  const wmdur=tot? rows.reduce((s,r)=>s+r.mdur*r.dirtyU,0)/tot : 0;
+  return {rows, tot, acc:rows.reduce((s,r)=>s+r.accU,0), pnl:rows.reduce((s,r)=>s+r.pnlU,0), wmdur};
+}
+function fundsModel(list){
+  let rows=list.map(p=>{ const mvC=p.units*p.nav, costC=p.units*(p.cost_nav!=null?p.cost_nav:p.nav);
+    const mvU=toUSD(mvC,p.ccy), costU=toUSD(costC,p.ccy); const soy=p.nav_soy||p.nav;
+    return {...p, mvU, pnlU:mvU-costU, pnlPct: costU?(mvU-costU)/costU:0, ytd: soy?(p.nav-soy)/soy:0};});
+  const tot=rows.reduce((s,r)=>s+r.mvU,0); rows.forEach(r=>r.w= tot? r.mvU/tot:0);
+  return {rows, tot, pnl:rows.reduce((s,r)=>s+r.pnlU,0)};
+}
+function structured(list){
+  let rows=list.map(s=>{
+    const accC=s.notional*(s.accrual_pct/100)*daysSince(s.last_coupon)/365;
+    const mark=s.mark_pct!=null?s.mark_pct:100, cost=s.cost_pct!=null?s.cost_pct:100;
+    const markC=s.notional*mark/100;
+    const pnlU=toUSD(s.notional*(mark-cost)/100, s.ccy);
+    return {...s, accC, valU:toUSD(markC+accC,s.ccy), accU:toUSD(accC,s.ccy), pnlU, mark,
+      dToNext:daysUntil(s.next_coupon), nextAmtU:toUSD(s.notional*(s.accrual_pct/100)/s.freq_per_yr,s.ccy)};
+  });
+  return {rows, tot:rows.reduce((s,r)=>s+r.valU,0), acc:rows.reduce((s,r)=>s+r.accU,0), pnl:rows.reduce((s,r)=>s+r.pnlU,0)};
+}
+function options(list){
+  let rows=list.map(o=>{
+    const pnlU=(o.price-o.entry_premium)*o.contracts*o.multiplier/perUSD(o.ccy);
+    const premU=Math.abs(o.entry_premium*o.contracts*o.multiplier)/perUSD(o.ccy);   // premium paid/received
+    return {...o, mvU:o.contracts*o.multiplier*o.price/perUSD(o.ccy), pnlU,
+      pnlPct: premU? pnlU/premU : 0, dToExp:daysUntil(o.expiry)};
+  });
+  return {rows, tot:rows.reduce((s,r)=>s+r.mvU,0), pnl:rows.reduce((s,r)=>s+r.pnlU,0)};
+}
+function futures(list){
+  let rows=list.map(f=>({...f,
+    notU:f.qty*f.price*f.multiplier/perUSD(f.ccy),
+    pnlU:(f.price-f.entry_price)*f.qty*f.multiplier/perUSD(f.ccy),
+    marginU:f.margin/perUSD(f.ccy)}));
+  return {rows, tot:rows.reduce((s,r)=>s+r.pnlU,0), margin:rows.reduce((s,r)=>s+r.marginU,0),
+    notional:rows.reduce((s,r)=>s+r.notU,0)};
+}
+function loans(list){
+  let rows=list.map(l=>{
+    const accC=l.principal*(l.rate_pct/100)*daysSince(l.start_date)/365;
+    return {...l, accC, owedC:l.principal+accC, owedU:toUSD(l.principal+accC,l.ccy)};
+  });
+  return {rows, tot:rows.reduce((s,r)=>s+r.owedU,0)};
+}
+function acctOK(x){ return state.account==='ALL' || x.account===state.account; }
+function ledgerFiltered(){ return DATA.ledger.filter(acctOK); }
+function cash(){
+  const ccys=['USD','EUR','ARS'];
+  const led=ledgerFiltered();
+  const rows=ccys.map(cc=>{
+    const bal=led.filter(t=>t.ccy===cc).reduce((s,t)=>s+t.cash_flow,0);
+    return {ccy:cc, bal, usd:toUSD(bal,cc)};
+  }).filter(r=>Math.abs(r.bal)>0.0001);
+  return {rows, tot:rows.reduce((s,r)=>s+r.usd,0)};
+}
+function ledgerRows(){
+  const led=[...ledgerFiltered()].sort((a,b)=> a.date<b.date?-1:a.date>b.date?1:0);
+  const run={};  // running balance keyed by account + currency
+  return led.map(t=>{
+    const k=(t.account||'')+'|'+t.ccy;
+    run[k]=(run[k]||0)+t.cash_flow;
+    return {...t, usd:toUSD(t.cash_flow,t.ccy), running:run[k]};
+  });
+}
+
+/* Realized P&L from the ledger — average-cost method, per instrument.
+   Buys add to cost pool; sells realize (proceeds − avg cost × qty sold).
+   Options/futures excluded (their P&L is marked-to-market, shown as unrealized). */
+function realizedPnL(){
+  const led=[...ledgerFiltered()].sort((a,b)=> a.date<b.date?-1:a.date>b.date?1:0);
+  const pool={}; // instrument -> {qty, cost} in native ccy
+  const events=[];
+  const EXCL=new Set(['Options','Futures']);
+  led.forEach(t=>{
+    if(t.qty==null) return;
+    const k=(t.account||'')+'|'+t.instrument;
+    if(!pool[k]) pool[k]={qty:0,cost:0,ccy:t.ccy};
+    if(t.type==='Buy'){ pool[k].qty+=t.qty; pool[k].cost+=Math.abs(t.cash_flow); }
+    else if(t.type==='Sell' && !EXCL.has(t.asset_class)){
+      const p=pool[k]; const avg= p.qty>0? p.cost/p.qty : 0;
+      const costOut=avg*t.qty; const proceeds=Math.abs(t.cash_flow);
+      const realC=proceeds-costOut;
+      p.qty-=t.qty; p.cost-=costOut;
+      events.push({date:t.date, instrument:k, cls:t.asset_class, ccy:t.ccy, qty:t.qty,
+        proceeds, cost:costOut, realizedC:realC, realizedU:toUSD(realC,t.ccy)});
+    }
+  });
+  return {events, tot:events.reduce((s,e)=>s+e.realizedU,0)};
+}
+
+function buildModel(){
+  const F=acctOK;
+  const eg=equities(DATA.equities_global.filter(F));
+  const ea=equities(DATA.equities_arg.filter(F));
+  const bi=bonds(DATA.bonds_intl.filter(F));
+  const ba=bonds(DATA.bonds_arg.filter(F));
+  const st=structured(DATA.structured.filter(F));
+  const op=options(DATA.options.filter(F));
+  const fu=futures(DATA.futures.filter(F));
+  const ln=loans(DATA.loans.filter(F));
+  const fn=fundsModel((DATA.funds||[]).filter(F));
+  const ch=cash();
+  const classes=[
+    ['Global Equities',eg.tot],['Argentine Equities',ea.tot],['Funds',fn.tot],['International Bonds',bi.tot],
+    ['Argentine Bonds',ba.tot],['Structured Products',st.tot],['Options',op.tot],
+    ['Futures',fu.tot],['Cash',ch.tot]
+  ];
+  const gross=classes.reduce((s,c)=>s+c[1],0);
+  const liab=ln.tot;
+  const net=gross-liab;
+  const accrued=bi.acc+ba.acc+st.acc;
+  // unrealized P&L across every asset class
+  const unrealByClass=[
+    ['Global Equities',eg.pnl],['Argentine Equities',ea.pnl],['Funds',fn.pnl],['International Bonds',bi.pnl],
+    ['Argentine Bonds',ba.pnl],['Structured Products',st.pnl],['Options',op.pnl],['Futures',fu.tot]
+  ];
+  const unreal=unrealByClass.reduce((s,c)=>s+c[1],0);
+  const rz=realizedPnL();
+  const income=ledgerFiltered().filter(t=>t.type==='Coupon'||t.type==='Dividend').reduce((a,t)=>a+toUSD(t.cash_flow,t.ccy),0);
+  return {eg,ea,bi,ba,st,op,fu,ln,fn,ch,classes,gross,liab,net,accrued,
+    unrealByClass,unreal,realized:rz.tot,realizedEvents:rz.events,income,totalPnl:unreal};
+}
+
+/* ===================== ADVANCED ANALYTICS ===================== */
+const RF=()=>((DATA.config||{}).risk_free_pct||4)/100;
+function fullNetUSD(){ const s=state.account; state.account='ALL'; const n=buildModel().net; state.account=s; return n; }
+
+/* --- Black-Scholes Greeks --- */
+function normPdf(x){ return 0.3989422804014327*Math.exp(-x*x/2); }
+function normCdf(x){ const t=1/(1+0.2316419*Math.abs(x)); const d=normPdf(x);
+  let p=d*t*(0.319381530+t*(-0.356563782+t*(1.781477937+t*(-1.821255978+t*1.330274429))));
+  return x>0? 1-p : p; }
+function optGreeks(o){
+  const S=o.spot||o.strike, K=o.strike, sig=o.iv||0.25, r=RF();
+  const T=Math.max(daysUntil(o.expiry),0)/365, call=(o.type==='Call');
+  if(T<=0||sig<=0){ const intr=call?Math.max(S-K,0):Math.max(K-S,0); return {delta:call?(S>K?1:0):(S<K?-1:0),gamma:0,vega:0,theta:0,price:intr}; }
+  const d1=(Math.log(S/K)+(r+sig*sig/2)*T)/(sig*Math.sqrt(T)), d2=d1-sig*Math.sqrt(T);
+  const delta=call? normCdf(d1) : normCdf(d1)-1;
+  const gamma=normPdf(d1)/(S*sig*Math.sqrt(T));
+  const vega=S*normPdf(d1)*Math.sqrt(T)/100;                     // per 1 vol point
+  const theta=(-(S*normPdf(d1)*sig)/(2*Math.sqrt(T)) - (call?1:-1)*r*K*Math.exp(-r*T)*normCdf(call?d2:-d2))/365; // per day
+  const price=call? S*normCdf(d1)-K*Math.exp(-r*T)*normCdf(d2) : K*Math.exp(-r*T)*normCdf(-d2)-S*normCdf(-d1);
+  return {delta,gamma,vega,theta,price};
+}
+function optionsWithGreeks(){
+  return DATA.options.filter(acctOK).map(o=>{ const g=optGreeks(o); const m=o.contracts*o.multiplier;
+    return {...o, g, deltaSh:g.delta*m, deltaUSD:g.delta*m*(o.spot||o.strike)/perUSD(o.ccy),
+      gammaUSD:g.gamma*m*(o.spot||o.strike)/perUSD(o.ccy), thetaUSD:g.theta*m/perUSD(o.ccy),
+      vegaUSD:g.vega*m/perUSD(o.ccy), mvU:o.contracts*o.multiplier*o.price/perUSD(o.ccy),
+      notionalU:Math.abs(m)*(o.spot||o.strike)/perUSD(o.ccy)}; });
+}
+function portfolioGreeks(){
+  const ows=optionsWithGreeks();
+  return {deltaUSD:ows.reduce((s,o)=>s+o.deltaUSD,0), gammaUSD:ows.reduce((s,o)=>s+o.gammaUSD,0),
+    thetaUSD:ows.reduce((s,o)=>s+o.thetaUSD,0), vegaUSD:ows.reduce((s,o)=>s+o.vegaUSD,0), rows:ows};
+}
+
+/* --- holdings with economic value + exposure (USD) --- */
+function ccyCountry(ccy){ return ccy==='USD'?'United States':ccy==='ARS'?'Argentina':ccy==='EUR'?'Eurozone':ccy; }
+function holdings(){
+  const F=acctOK, h=[];
+  DATA.equities_global.concat(DATA.equities_arg).filter(F).forEach(p=>{const v=toUSD(p.qty*p.price,p.ccy);
+    h.push({name:p.ticker,cls:'Equity',account:p.account,sector:p.sector||'Other',country:p.country||ccyCountry(p.ccy),ccy:p.ccy,mvU:v,expU:v});});
+  (DATA.funds||[]).filter(F).forEach(p=>{const v=toUSD(p.units*p.nav,p.ccy);
+    h.push({name:p.id,cls:'Fund',account:p.account,sector:p.sector||'Fund',country:p.country||ccyCountry(p.ccy),ccy:p.ccy,mvU:v,expU:v});});
+  DATA.bonds_intl.concat(DATA.bonds_arg).filter(F).forEach(b=>{const clean=b.face*b.price_pct/100, acc=b.face*(b.coupon_pct/100)*daysSince(b.last_coupon)/365; const v=toUSD(clean+acc,b.ccy);
+    h.push({name:b.id,cls:'Bond',account:b.account,sector:b.sector||'Government',country:b.country||ccyCountry(b.ccy),ccy:b.ccy,mvU:v,expU:v});});
+  DATA.structured.filter(F).forEach(s=>{const v=toUSD(s.notional*(s.mark_pct||100)/100 + s.notional*(s.accrual_pct/100)*daysSince(s.last_coupon)/365,s.ccy);
+    h.push({name:s.id,cls:'Structured',account:s.account,sector:s.sector||'Structured Credit',country:s.country||'United States',ccy:s.ccy,mvU:v,expU:v});});
+  optionsWithGreeks().forEach(o=>h.push({name:o.id,cls:'Option',account:o.account,sector:'Derivatives',country:o.country||'United States',ccy:o.ccy,mvU:o.mvU,expU:o.deltaUSD}));
+  DATA.futures.filter(F).forEach(f=>{const notU=f.qty*f.price*f.multiplier/perUSD(f.ccy), pnlU=(f.price-f.entry_price)*f.qty*f.multiplier/perUSD(f.ccy);
+    h.push({name:f.id,cls:'Future',account:f.account,sector:'Derivatives',country:f.country||'United States',ccy:f.ccy,mvU:pnlU,expU:notU});});
+  ['USD','EUR','ARS'].forEach(cc=>{const bal=ledgerFiltered().filter(t=>t.ccy===cc).reduce((s,t)=>s+t.cash_flow,0); if(Math.abs(bal)>0.01){const v=toUSD(bal,cc);
+    h.push({name:cc+' Cash',cls:'Cash',account:'—',sector:'Cash',country:ccyCountry(cc),ccy:cc,mvU:v,expU:v});}});
+  DATA.loans.filter(F).forEach(l=>{const v=-toUSD(l.principal+l.principal*(l.rate_pct/100)*daysSince(l.start_date)/365,l.ccy);
+    h.push({name:l.id,cls:'Loan',account:l.account,sector:'Financing',country:ccyCountry(l.ccy),ccy:l.ccy,mvU:v,expU:v});});
+  return h;
+}
+function exposureBy(key){ const h=holdings(); const g={};
+  h.forEach(x=>{ const k=x[key]; g[k]=(g[k]||0)+x.expU; });
+  const tot=Object.values(g).reduce((a,b)=>a+Math.abs(b),0)||1;
+  return Object.entries(g).map(([k,v])=>({k,v,pct:v/Object.values(g).reduce((a,b)=>a+b,0)})).sort((a,b)=>Math.abs(b.v)-Math.abs(a.v));
+}
+function concentration(){
+  const longs=holdings().filter(x=>x.mvU>0 && x.cls!=='Cash');
+  const tot=longs.reduce((s,x)=>s+x.mvU,0)||1;
+  longs.forEach(x=>x.w=x.mvU/tot); longs.sort((a,b)=>b.mvU-a.mvU);
+  const hhi=longs.reduce((s,x)=>s+x.w*x.w,0);   // 0..1
+  return {rows:longs, tot, hhi, top1:longs[0]?longs[0].w:0,
+    top5:longs.slice(0,5).reduce((s,x)=>s+x.w,0), n:longs.length, effN: hhi?1/hhi:0};
+}
+
+/* --- risk metrics from the net-worth snapshot series (respects account filter) --- */
+function riskSeriesUSD(){
+  const acct=state.account; const snaps=[...DATA.snapshots].sort((a,b)=>a.date<b.date?-1:1);
+  const vals=snaps.map(sp=> acct==='ALL'? sp.net_worth_usd : ((sp.by_account||{})[acct]||0));
+  vals.push(acct==='ALL'? fullNetUSD() : (buildModel().net));
+  return vals;
+}
+function riskMetrics(){
+  const snaps=[...DATA.snapshots].sort((a,b)=>a.date<b.date?-1:1);
+  const dates=snaps.map(s=>s.date).concat([today().toISOString().slice(0,10)]);
+  const v=riskSeriesUSD();
+  const rets=[]; for(let i=1;i<v.length;i++) if(v[i-1]) rets.push(v[i]/v[i-1]-1);
+  const n=rets.length||1; const mean=rets.reduce((a,b)=>a+b,0)/n;
+  const sd=Math.sqrt(rets.reduce((a,b)=>a+(b-mean)*(b-mean),0)/Math.max(1,n-1));
+  // periods-per-year from the ACTUAL average spacing of snapshots (not a hardcoded 12)
+  const spanDays=Math.max(1,daysBetween(pdate(dates[0]),pdate(dates[dates.length-1])));
+  const ppy = n>0 ? 365/(spanDays/n) : 12;
+  const rfP = RF()/ppy;                                   // per-period risk-free
+  const volAnn=sd*Math.sqrt(ppy);
+  // annualized Sharpe = (mean periodic excess return / periodic stdev) * sqrt(periods)
+  const sharpe = sd ? ((mean-rfP)/sd)*Math.sqrt(ppy) : Infinity;
+  const dn=rets.filter(x=>x<rfP).map(x=>x-rfP);
+  const ddev=Math.sqrt(dn.reduce((a,b)=>a+b*b,0)/Math.max(1,n));   // downside deviation (periodic)
+  const sortino = ddev ? ((mean-rfP)/ddev)*Math.sqrt(ppy) : Infinity;
+  const totRet = v[0]? v[v.length-1]/v[0]-1 : 0;
+  const cagr=(spanDays>0)? Math.pow(1+totRet,365/spanDays)-1 : 0;
+  let peak=v[0],maxDD=0; v.forEach(x=>{ if(x>peak)peak=x; const dd=peak? (x-peak)/peak:0; if(dd<maxDD)maxDD=dd; });
+  const best=Math.max(...rets), worst=Math.min(...rets);
+  const smooth = (maxDD===0 && rets.filter(x=>x<0).length===0);
+  return {volAnn,cagr,maxDD,sharpe,sortino,best,worst,n,smooth,ppy};
+}
+
+/* --- forward income projection + maturity ladder --- */
+function projectIncome(monthsAhead){
+  const out=[]; const start=today(); const end=new Date(start); end.setUTCMonth(end.getUTCMonth()+monthsAhead);
+  const addStream=(nextStr,matStr,freq,amtCcy,ccy,name,account,typ)=>{
+    if(!nextStr||!freq||!amtCcy) return; let dt=pdate(nextStr); const mat=matStr?pdate(matStr):end;
+    const step=Math.max(1,Math.round(12/freq)); let g=0;
+    while(dt<=end && dt<=mat && g++<80){ if(dt>=start) out.push({date:dt.toISOString().slice(0,10),instrument:name,account,type:typ,amountU:toUSD(amtCcy,ccy),ccy}); const nx=new Date(dt); nx.setUTCMonth(nx.getUTCMonth()+step); dt=nx; }
+  };
+  DATA.bonds_intl.concat(DATA.bonds_arg).filter(acctOK).forEach(b=>addStream(b.next_coupon,b.maturity,b.freq_per_yr,b.face*(b.coupon_pct/100)/b.freq_per_yr,b.ccy,b.id,b.account,'Coupon'));
+  DATA.structured.filter(acctOK).forEach(s=>addStream(s.next_coupon,s.maturity,s.freq_per_yr,s.notional*(s.accrual_pct/100)/s.freq_per_yr,s.ccy,s.id,s.account,'Note coupon'));
+  DATA.equities_global.concat(DATA.equities_arg).filter(acctOK).forEach(p=>{ if(p.annual_div_ps&&p.div_freq&&p.next_div) addStream(p.next_div,null,p.div_freq,p.qty*p.annual_div_ps/p.div_freq,p.ccy,p.ticker,p.account,'Dividend'); });
+  return out.sort((a,b)=>a.date<b.date?-1:1);
+}
+function incomeByMonth(){
+  const evs=projectIncome(12); const m={};
+  evs.forEach(e=>{ const k=e.date.slice(0,7); (m[k]=m[k]||{key:k,total:0,items:[]}); m[k].total+=e.amountU; m[k].items.push(e); });
+  return Object.values(m).sort((a,b)=>a.key<b.key?-1:1);
+}
+function maturityLadder(){
+  const items=DATA.bonds_intl.concat(DATA.bonds_arg).filter(acctOK).map(b=>({name:b.id,year:(b.maturity||'').slice(0,4),principalU:toUSD(b.face,b.ccy),ccy:b.ccy,type:'Bond',account:b.account,mat:b.maturity}))
+    .concat(DATA.structured.filter(acctOK).map(s=>({name:s.id,year:(s.maturity||'').slice(0,4),principalU:toUSD(s.notional,s.ccy),ccy:s.ccy,type:'Note',account:s.account,mat:s.maturity})));
+  const y={}; items.forEach(it=>{ (y[it.year]=y[it.year]||{year:it.year,total:0,items:[]}); y[it.year].total+=it.principalU; y[it.year].items.push(it); });
+  return {byYear:Object.values(y).sort((a,b)=>a.year<b.year?-1:1), items};
+}
+
+/* --- alerts --- */
+function alertsList(){
+  const cfg=(DATA.config||{}).alerts||{coupon_days:21,expiry_days:21,maturity_days:120,move_pct:20};
+  const a=[];
+  projectIncome(3).forEach(e=>{ const dd=daysUntil(e.date); if(dd>=0&&dd<=cfg.coupon_days) a.push({sev:'info',tag:e.type,text:`${fmt(e.amountU)} from <b>${e.instrument}</b> (${e.account}) in ${dd}d · ${e.date}`,d:dd}); });
+  DATA.options.filter(acctOK).forEach(o=>{ const dd=daysUntil(o.expiry); if(dd>=0&&dd<=cfg.expiry_days) a.push({sev:'warn',tag:'Option expiry',text:`<b>${o.id}</b> (${o.account}) expires in ${dd}d · ${o.expiry}`,d:dd}); });
+  DATA.bonds_intl.concat(DATA.bonds_arg).filter(acctOK).forEach(b=>{ const dd=daysUntil(b.maturity); if(dd>=0&&dd<=cfg.maturity_days) a.push({sev:'info',tag:'Maturity',text:`<b>${b.id}</b> matures in ${dd}d · ${fmt(toUSD(b.face,b.ccy))} principal`,d:dd}); });
+  const mv=cfg.move_pct/100;
+  DATA.equities_global.concat(DATA.equities_arg).filter(acctOK).forEach(p=>{ const soy=p.price_soy||p.price; const y=soy?(p.price-soy)/soy:0; if(Math.abs(y)>=mv) a.push({sev:y<0?'crit':'good',tag:'Big move',text:`<b>${p.ticker}</b> (${p.account}) ${(y*100).toFixed(0)}% YTD`,d:0}); });
+  DATA.loans.filter(acctOK).forEach(l=>{ const acc=l.principal*(l.rate_pct/100)*daysSince(l.start_date)/365; if(acc>0) a.push({sev:'warn',tag:'Loan interest',text:`<b>${l.id}</b> accrued ${fmt(toUSD(acc,l.ccy))} (${l.rate_pct}% p.a.)`,d:0}); });
+  const order={crit:0,warn:1,good:2,info:3};
+  return a.sort((x,y)=>(order[x.sev]-order[y.sev])|| (x.d-y.d));
+}
+
+/* ---------------- SVG donut ---------------- */
+function donut(items){ // items:[{label,value,color}]
+  const total=items.reduce((s,i)=>s+Math.max(0,i.value),0)||1;
+  const R=78,r=48,cx=95,cy=95;let a=-Math.PI/2;
+  let paths='';
+  items.forEach(it=>{
+    const v=Math.max(0,it.value), frac=v/total, a2=a+frac*2*Math.PI;
+    if(frac<=0) return;
+    const large=frac>0.5?1:0;
+    const x1=cx+R*Math.cos(a),y1=cy+R*Math.sin(a),x2=cx+R*Math.cos(a2),y2=cy+R*Math.sin(a2);
+    const xi1=cx+r*Math.cos(a2),yi1=cy+r*Math.sin(a2),xi2=cx+r*Math.cos(a),yi2=cy+r*Math.sin(a);
+    paths+=`<path d="M${x1} ${y1} A${R} ${R} 0 ${large} 1 ${x2} ${y2} L${xi1} ${yi1} A${r} ${r} 0 ${large} 0 ${xi2} ${yi2} Z" fill="var(${it.color})" stroke="var(--surface)" stroke-width="2"><title>${it.label}: ${fmt(it.value)} (${pct(frac)})</title></path>`;
+    a=a2;
+  });
+  return `<svg viewBox="0 0 190 190" width="190" height="190" role="img">${paths}</svg>`;
+}
+
+/* ---------------- SVG line chart ---------------- */
+function lineChart(points){ // points:[{date,value}] value ALREADY in display ccy (per-date fx)
+  const W=560,H=200,padL=54,padR=14,padT=14,padB=28;
+  const xs=points.map(p=>pdate(p.date).getTime());
+  const ys=points.map(p=>p.value);
+  const xmin=Math.min(...xs),xmax=Math.max(...xs);
+  const ymin=Math.min(...ys),ymax=Math.max(...ys);
+  const ylo=ymin-(ymax-ymin)*0.12, yhi=ymax+(ymax-ymin)*0.12;
+  const X=t=>padL+(xmax===xmin?0:(t-xmin)/(xmax-xmin))*(W-padL-padR);
+  const Y=v=>padT+(yhi===ylo?0:(1-(v-ylo)/(yhi-ylo)))*(H-padT-padB);
+  let d=''; points.forEach((p,i)=>{d+=(i?'L':'M')+X(xs[i]).toFixed(1)+' '+Y(ys[i]).toFixed(1)+' ';});
+  const area=d+`L${X(xmax).toFixed(1)} ${Y(ylo).toFixed(1)} L${X(xmin).toFixed(1)} ${Y(ylo).toFixed(1)} Z`;
+  const gy=[ylo,(ylo+yhi)/2,yhi].map(v=>`<line x1="${padL}" y1="${Y(v).toFixed(1)}" x2="${W-padR}" y2="${Y(v).toFixed(1)}" stroke="var(--grid)" stroke-width="1"/><text x="${padL-6}" y="${(Y(v)+3).toFixed(1)}" text-anchor="end" font-size="10">${CCY_SYM[state.ccy]}${(v/1000).toFixed(0)}k</text>`).join('');
+  const dots=points.map((p,i)=>`<circle cx="${X(xs[i]).toFixed(1)}" cy="${Y(ys[i]).toFixed(1)}" r="3" fill="var(--s1)"><title>${p.date}: ${CCY_SYM[state.ccy]}${fmtNum(p.value,0)}</title></circle>`).join('');
+  const xlab=[points[0],points[points.length-1]].map(p=>`<text x="${X(pdate(p.date).getTime()).toFixed(1)}" y="${H-8}" text-anchor="middle" font-size="10">${p.date}</text>`).join('');
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" role="img" preserveAspectRatio="xMidYMid meet">
+    ${gy}<path d="${area}" fill="var(--s1)" opacity="0.10"/><path d="${d}" fill="none" stroke="var(--s1)" stroke-width="2"/>${dots}${xlab}</svg>`;
+}
+
+/* ---------------- rendering ---------------- */
+const TABS=[
+  ['master','Master'],['accounts','Accounts'],['analysis','Analysis'],['pnl','P&L'],['income','Income'],['risk','Risk'],['eqGlobal','Global Equities'],['eqArg','ARG Equities'],
+  ['bondsIntl','Intl Bonds'],['bondsArg','ARG Bonds'],['funds','Funds'],['structured','Structured'],
+  ['options','Options'],['futures','Futures'],['loans','Loans'],['cash','Cash'],
+  ['ledger','Ledger'],['operations','Operations']
+];
+const ACCT_NAME=id=>{ const a=(DATA.accounts||[]).find(x=>x.id===id); return a?a.name:id; };
+let activeTab='master';
+
+function chip(color){return `<i style="background:var(${color})"></i>`;}
+function cls(v){return v>=0?'pos':'neg';}
+function sign(usd){return (disp(usd)>=0?'+':'')+fmt(usd);}
+
+function renderTabs(){
+  document.getElementById('tabs').innerHTML=TABS.map(([k,l])=>
+    `<button data-tab="${k}" class="${k===activeTab?'active':''}">${l}</button>`).join('');
+  document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>{activeTab=b.dataset.tab;render();});
+}
+
+function tableFor(headers, rows, footer){
+  return `<div class="tblwrap"><table><thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead>
+    <tbody>${rows.join('')}</tbody>${footer?`<tfoot><tr>${footer}</tr></tfoot>`:''}</table></div>`;
+}
+
+function viewMaster(m){
+  const kpis=[
+    ['Net Worth', fmt(m.net), `Gross ${fmt(m.gross)} − Liab ${fmt(m.liab)}`],
+    ['Gross Assets', fmt(m.gross), `${m.classes.length} asset classes`],
+    ['Liabilities', fmt(m.liab), 'Loans / overdraft + accrued'],
+    ['Cash', fmt(m.ch.tot), 'Across USD / EUR / ARS'],
+    ['Accrued Interest', fmt(m.accrued), 'Bonds + structured, to date'],
+    ['Unrealized P&L', sign(m.totalPnl), 'All open positions — see P&L tab']
+  ];
+  const kpiHtml=kpis.map(k=>`<div class="kpi"><div class="lbl">${k[0]}</div>
+    <div class="val ${k[0]==='Unrealized P&L'?cls(m.totalPnl):(k[0]==='Liabilities'?'neg':'')}">${k[1]}</div>
+    <div class="sub2">${k[2]}</div></div>`).join('');
+
+  const donutItems=m.classes.filter(c=>c[1]>0).map(c=>({label:c[0],value:c[1],color:CLASS_COLORS[c[0]]}));
+  const legend=donutItems.map(i=>`<span>${chip(i.color)} ${i.label} · ${pct(i.value/m.gross)}</span>`).join('');
+
+  const maxAbs=Math.max(...m.classes.map(c=>Math.abs(c[1])),m.liab);
+  const bars=[...m.classes,['Loans (liab.)',-m.liab]].map(c=>{
+    const w=Math.abs(c[1])/maxAbs*100;
+    const col=c[0].startsWith('Loans')?'--bad':CLASS_COLORS[c[0]]||'--s1';
+    return `<div class="barrow"><span>${c[0]}</span>
+      <div class="bartrack"><div class="barfill" style="width:${w}%;background:var(${col})"></div></div>
+      <span style="text-align:right">${fmt(c[1])}</span></div>`;
+  }).join('');
+
+  const allocRows=m.classes.map(c=>`<tr><td>${chip(CLASS_COLORS[c[0]])} ${c[0]}</td>
+    <td>${fmt(c[1])}</td><td>${pct(c[1]/m.gross)}</td></tr>`).join('');
+
+  // upcoming coupons
+  const coupons=[];
+  m.bi.rows.concat(m.ba.rows).forEach(b=>coupons.push({name:b.id,date:b.next_coupon,amt:b.nextAmtU,d:b.dToNext,type:'Bond'}));
+  m.st.rows.forEach(s=>coupons.push({name:s.id,date:s.next_coupon,amt:s.nextAmtU,d:s.dToNext,type:'Note'}));
+  coupons.sort((a,b)=>a.d-b.d);
+  const couponHtml=coupons.map(c=>`<div class="coupon"><span>${c.name} <span class="tag">${c.type}</span></span>
+    <span class="muted">${c.date} · ${c.d}d</span><span style="text-align:right">${fmt(c.amt)}</span></div>`).join('');
+
+  return `
+    <div class="kpis">${kpiHtml}</div>
+    ${alertsCard()}
+    <div class="grid2">
+      <div class="card"><h3>Allocation by asset class <span class="hint">share of gross assets</span></h3>
+        <div class="center"><div>${donut(donutItems)}</div>
+          <div style="min-width:200px"><div class="muted" style="font-size:12px">Net worth</div>
+          <div style="font-size:22px;font-weight:700">${fmt(m.net)}</div>
+          <div class="legend" style="margin-top:10px">${legend}</div></div></div>
+      </div>
+      <div class="card"><h3>Value by asset class</h3>${bars}
+        <div class="note">Bars compare each sleeve's market value; Loans shown as a liability (red).</div>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="card"><h3>Allocation table</h3>
+        ${tableFor(['Asset class','Value','Weight'],allocRows.split('</tr>').filter(Boolean).map(r=>r+'</tr>'),
+          `<td>Net worth</td><td>${fmt(m.net)}</td><td>—</td>`)}
+      </div>
+      <div class="card"><h3>Upcoming coupons & accruals <span class="hint">next payment per instrument</span></h3>
+        ${couponHtml}
+        <div class="coupon" style="border-bottom:0;font-weight:700"><span>Total accrued to date</span><span></span>
+          <span style="text-align:right">${fmt(m.accrued)}</span></div>
+      </div>
+    </div>`;
+}
+
+function consolidateByTicker(list){
+  const g={};
+  list.forEach(r=>{ const k=r.ticker;
+    if(!g[k]) g[k]={...r, accounts:new Set([r.account])};
+    else { const o=g[k]; const nq=o.qty+r.qty;
+      o.avg_cost = nq? (o.qty*o.avg_cost+r.qty*r.avg_cost)/nq : r.avg_cost;
+      o.qty=nq; o.mvU+=r.mvU; o.pnlU+=r.pnlU; o.accounts.add(r.account); }
+  });
+  const rows=Object.values(g); const tot=rows.reduce((s,r)=>s+r.mvU,0);
+  rows.forEach(r=>{ r.w= tot? r.mvU/tot:0; const cost=r.mvU-r.pnlU; r.pnlPct= cost? r.pnlU/cost:0; });
+  return rows;
+}
+function viewEquities(model,titleTxt){
+  const grouped = groupByInstrument && state.account==='ALL';
+  const rowsData = grouped? consolidateByTicker(model.rows) : model.rows;
+  const rows=rowsData.map(r=>{
+    const acctTag = grouped ? (r.accounts.size>1? `<span class="tag">${r.accounts.size} accounts</span>` : `<span class="tag">${[...r.accounts][0]}</span>`) : `<span class="tag">${r.account}</span>`;
+    return `<tr><td><b>${r.ticker}</b> <span class="muted">${r.name}</span> ${acctTag}<br><span class="isin">${r.isin||''}</span></td>
+    <td>${fmtNum(r.qty)}</td><td>${fmtNum(r.avg_cost,2)}</td><td>${fmtNum(r.price,2)} <span class="tag">${r.ccy}</span></td>
+    <td>${fmt(r.mvU)}</td><td class="${cls(r.pnlU)}">${sign(r.pnlU)}</td>
+    <td class="${cls(r.pnlU)}">${(r.pnlPct*100).toFixed(1)}%</td>
+    <td class="${cls(r.ytd)}">${(r.ytd*100).toFixed(1)}%</td><td>${pct(r.w)}</td></tr>`;}).join('');
+  const foot=`<td>Total</td><td></td><td></td><td></td><td>${fmt(model.tot)}</td>
+    <td class="${cls(model.pnl)}">${sign(model.pnl)}</td><td></td><td></td><td>100%</td>`;
+  const toggle = state.account==='ALL' ? `<button class="btn ghost" style="float:right;font-size:12px;padding:3px 10px" onclick="groupByInstrument=!groupByInstrument;render()">${grouped?'● Consolidated':'○ By account'}</button>` : '';
+  return `<div class="kpis">
+    <div class="kpi"><div class="lbl">Market Value</div><div class="val">${fmt(model.tot)}</div></div>
+    <div class="kpi"><div class="lbl">Unrealized P&L</div><div class="val ${cls(model.pnl)}">${sign(model.pnl)}</div></div>
+    <div class="kpi"><div class="lbl">${grouped?'Instruments':'Positions'}</div><div class="val">${rowsData.length}</div></div></div>
+    <div class="card"><h3>${titleTxt} ${toggle}<span class="hint">prices in each instrument's own currency; values in ${state.ccy}. ${grouped?'Same ticker consolidated across accounts (weighted avg cost).':'One line per account — toggle to consolidate.'}</span></h3>
+    ${tableFor(['Position','Qty','Avg cost','Price','Mkt value','P&L','P&L %','YTD','Weight'],
+      rows.split('</tr>').filter(Boolean).map(r=>r+'</tr>'),foot)}
+    </div>`;
+}
+
+function viewBonds(model,titleTxt,sub){
+  const rows=model.rows.map(b=>`<tr><td><b>${b.id}</b> <span class="muted">${b.name}</span> <span class="tag">${b.account}</span><br><span class="isin">${b.isin||''}</span></td>
+    <td>${fmtNum(b.face)} <span class="tag">${b.ccy}</span></td><td>${b.coupon_pct.toFixed(2)}%</td>
+    <td>${(b.cost_pct!=null?b.cost_pct:b.price_pct).toFixed(2)}</td><td>${b.price_pct.toFixed(2)}</td>
+    <td>${(b.ytm*100).toFixed(2)}%</td><td>${b.mdur.toFixed(2)}</td>
+    <td>${b.next_coupon}<br><span class="muted">${b.dToNext}d</span></td>
+    <td class="pos">${fmt(b.accU)}</td><td class="${cls(b.pnlU)}">${sign(b.pnlU)}</td><td>${fmt(b.dirtyU)}</td></tr>`).join('');
+  const foot=`<td>Total</td><td></td><td></td><td></td><td></td><td></td><td>${model.wmdur.toFixed(2)}</td><td></td><td class="pos">${fmt(model.acc)}</td><td class="${cls(model.pnl)}">${sign(model.pnl)}</td><td>${fmt(model.tot)}</td>`;
+  return `<div class="kpis">
+    <div class="kpi"><div class="lbl">Dirty Value</div><div class="val">${fmt(model.tot)}</div></div>
+    <div class="kpi"><div class="lbl">Unrealized P&L</div><div class="val ${cls(model.pnl)}">${sign(model.pnl)}</div><div class="sub2">price vs cost</div></div>
+    <div class="kpi"><div class="lbl">Accrued Interest</div><div class="val pos">${fmt(model.acc)}</div><div class="sub2">grows daily</div></div>
+    <div class="kpi"><div class="lbl">Wtd Mod. Duration</div><div class="val">${model.wmdur.toFixed(2)}</div><div class="sub2">rate sensitivity (yrs)</div></div></div>
+    <div class="card"><h3>${titleTxt}<span class="hint">${sub}</span></h3>
+    ${tableFor(['Bond','Face','Coupon','Cost','Price','YTM','Mod dur','Next coupon','Accrued','Unreal. P&L','Dirty value'],
+      rows.split('</tr>').filter(Boolean).map(r=>r+'</tr>'),foot)}
+    <div class="note">Accrued = Face × Coupon × days since last coupon ÷ 365 (Actual/365). YTM & duration solved from clean price (even-period approximation; the Excel workbook uses exact YIELD/DURATION). Nominal YTM/duration are not meaningful for CER/inflation-linked bonds (e.g. TX26).</div></div>`;
+}
+
+function viewStructured(model){
+  const rows=model.rows.map(s=>`<tr><td><b>${s.id}</b><br><span class="muted">${s.name}</span> <span class="isin">${s.isin||''}</span></td>
+    <td>${fmtNum(s.notional)} <span class="tag">${s.ccy}</span></td><td>${s.accrual_pct.toFixed(2)}%</td>
+    <td>${s.mark.toFixed(2)}</td><td>${s.next_coupon}<br><span class="muted">${s.dToNext}d</span></td>
+    <td class="pos">${fmt(s.accU)}</td><td class="${cls(s.pnlU)}">${sign(s.pnlU)}</td><td>${fmt(s.valU)}</td></tr>`).join('');
+  const foot=`<td>Total</td><td></td><td></td><td></td><td></td><td class="pos">${fmt(model.acc)}</td><td class="${cls(model.pnl)}">${sign(model.pnl)}</td><td>${fmt(model.tot)}</td>`;
+  return `<div class="kpis">
+    <div class="kpi"><div class="lbl">Value + Accrued</div><div class="val">${fmt(model.tot)}</div></div>
+    <div class="kpi"><div class="lbl">Unrealized P&L</div><div class="val ${cls(model.pnl)}">${sign(model.pnl)}</div><div class="sub2">mark vs cost</div></div>
+    <div class="kpi"><div class="lbl">Accrued Interest</div><div class="val pos">${fmt(model.acc)}</div></div>
+    <div class="kpi"><div class="lbl">Notes</div><div class="val">${model.rows.length}</div></div></div>
+    <div class="card"><h3>Structured Products <span class="hint">accrue interest over time, pay coupons every period</span></h3>
+    ${tableFor(['Product','Notional','Accrual p.a.','Mark %','Next coupon','Accrued','Unreal. P&L','Value+accrued'],
+      rows.split('</tr>').filter(Boolean).map(r=>r+'</tr>'),foot)}
+    <div class="note">Unrealized P&L = notional × (mark − cost) ÷ 100. Accrued interest is shown separately as income earned to date.</div></div>`;
+}
+
+function viewFunds(model){
+  const rows=model.rows.map(r=>`<tr><td><b>${r.id}</b> <span class="muted">${r.name||''}</span> <span class="tag">${r.account}</span><br><span class="isin">${r.isin||''}</span></td>
+    <td><span class="pill">${r.fund_type||'Fund'}</span></td><td>${fmtNum(r.units,0)}</td><td>${fmtNum(r.nav,2)} <span class="tag">${r.ccy}</span></td>
+    <td>${fmtNum(r.cost_nav!=null?r.cost_nav:r.nav,2)}</td><td>${fmt(r.mvU)}</td>
+    <td class="${cls(r.pnlU)}">${sign(r.pnlU)}</td><td class="${cls(r.pnlU)}">${(r.pnlPct*100).toFixed(1)}%</td><td class="${cls(r.ytd)}">${(r.ytd*100).toFixed(1)}%</td><td>${pct(r.w)}</td></tr>`).join('')
+    || '<tr><td colspan="10" class="muted">No funds in this slice. Add one via the Operations tab (product type: Funds).</td></tr>';
+  const foot=`<td>Total</td><td></td><td></td><td></td><td></td><td>${fmt(model.tot)}</td><td class="${cls(model.pnl)}">${sign(model.pnl)}</td><td></td><td></td><td>100%</td>`;
+  return `<div class="kpis">
+    <div class="kpi"><div class="lbl">Market Value</div><div class="val">${fmt(model.tot)}</div></div>
+    <div class="kpi"><div class="lbl">Unrealized P&L</div><div class="val ${cls(model.pnl)}">${sign(model.pnl)}</div></div>
+    <div class="kpi"><div class="lbl">Funds</div><div class="val">${model.rows.length}</div></div></div>
+    <div class="card"><h3>Funds <span class="hint">ETFs, mutual funds, money-market (FCI) & alternatives — valued at units × NAV</span></h3>
+    ${tableFor(['Fund','Type','Units','NAV','Cost NAV','Value','P&L','P&L %','YTD','Weight'],
+      rows.split('</tr>').filter(Boolean).map(r=>r+'</tr>'),foot)}
+    <div class="note">Value = units (quotas) × NAV. YTD = NAV move since start of year. For distributing funds, add income to the ledger as you receive it.</div></div>`;
+}
+
+function viewOptions(model){
+  const gws=portfolioGreeks(); const byId=Object.fromEntries(gws.rows.map(o=>[o.id+'|'+o.account,o]));
+  const rows=model.rows.map(o=>{ const gw=byId[o.id+'|'+o.account]||{g:{delta:0},deltaSh:0,deltaUSD:0,thetaUSD:0};
+    return `<tr><td><b>${o.id}</b> <span class="tag">${o.account}</span></td><td>${o.underlying}</td><td>${o.type}</td>
+    <td>${fmtNum(o.strike,0)}</td><td>${o.expiry}<br><span class="muted">${o.dToExp}d</span></td>
+    <td>${o.contracts}</td><td>${fmtNum(o.entry_premium,2)}</td><td>${fmtNum(o.price,2)}</td>
+    <td>${gw.g.delta.toFixed(2)}</td><td>${fmt(gw.deltaUSD)}</td>
+    <td>${fmt(o.mvU)}</td><td class="${cls(o.pnlU)}">${sign(o.pnlU)}</td><td class="${cls(o.pnlU)}">${(o.pnlPct*100).toFixed(1)}%</td></tr>`;}).join('');
+  const foot=`<td>Total</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>${fmt(gws.deltaUSD)}</td><td>${fmt(model.tot)}</td><td class="${cls(model.pnl)}">${sign(model.pnl)}</td><td></td>`;
+  return `<div class="kpis">
+    <div class="kpi"><div class="lbl">Net Market Value</div><div class="val">${fmt(model.tot)}</div></div>
+    <div class="kpi"><div class="lbl">Unrealized P&L</div><div class="val ${cls(model.pnl)}">${sign(model.pnl)}</div></div>
+    <div class="kpi"><div class="lbl">Portfolio Delta ($)</div><div class="val" style="font-size:18px">${fmt(gws.deltaUSD)}</div><div class="sub2">directional exposure</div></div>
+    <div class="kpi"><div class="lbl">Theta ($/day)</div><div class="val ${cls(gws.thetaUSD)}" style="font-size:18px">${fmt(gws.thetaUSD)}</div></div></div>
+    <div class="card"><h3>Options <span class="hint">negative contracts = short · unrealized P&L vs entry premium · Greeks via Black-Scholes</span></h3>
+    ${tableFor(['Position','Underlying','Type','Strike','Expiry','Contracts','Entry','Price','Delta','Δ $','Mkt value','P&L','P&L %'],
+      rows.split('</tr>').filter(Boolean).map(r=>r+'</tr>'),foot)}
+    <div class="note">Unrealized P&L = (price − entry premium) × contracts × multiplier. P&L % is the return on premium paid/received. Theta, gamma & vega are on the Risk tab.</div></div>`;
+}
+
+function viewFutures(model){
+  const rows=model.rows.map(f=>`<tr><td><b>${f.id}</b> <span class="muted">${f.name}</span></td>
+    <td>${f.qty}</td><td>${fmtNum(f.entry_price,2)}</td><td>${fmtNum(f.price,2)}</td>
+    <td>${fmtNum(f.multiplier)}</td><td>${fmt(f.notU)}</td><td>${fmt(f.marginU)}</td>
+    <td class="${cls(f.pnlU)}">${sign(f.pnlU)}</td></tr>`).join('');
+  const foot=`<td>Total</td><td></td><td></td><td></td><td></td><td>${fmt(model.notional)}</td><td>${fmt(model.margin)}</td><td class="${cls(model.tot)}">${sign(model.tot)}</td>`;
+  return `<div class="kpis">
+    <div class="kpi"><div class="lbl">Unrealized P&L (MTM)</div><div class="val ${cls(model.tot)}">${sign(model.tot)}</div></div>
+    <div class="kpi"><div class="lbl">Notional Exposure</div><div class="val">${fmt(model.notional)}</div></div>
+    <div class="kpi"><div class="lbl">Margin Posted</div><div class="val">${fmt(model.margin)}</div></div></div>
+    <div class="card"><h3>Futures <span class="hint">marked to market; P&L = (price − entry) × qty × multiplier</span></h3>
+    ${tableFor(['Contract','Qty','Entry','Price','Mult','Notional','Margin','Unreal. P&L'],
+      rows.split('</tr>').filter(Boolean).map(r=>r+'</tr>'),foot)}</div>`;
+}
+
+function viewLoans(model){
+  const rows=model.rows.map(l=>`<tr><td><b>${l.id}</b></td><td>${fmtNum(l.principal)} <span class="tag">${l.ccy}</span></td>
+    <td>${l.rate_pct.toFixed(1)}%</td><td>${l.start_date}</td><td class="neg">${fmt(toUSD(l.accC,l.ccy))}</td>
+    <td class="neg">${fmt(l.owedU)}</td></tr>`).join('');
+  const foot=`<td>Total owed</td><td></td><td></td><td></td><td></td><td class="neg">${fmt(model.tot)}</td>`;
+  return `<div class="kpis">
+    <div class="kpi"><div class="lbl">Total Owed</div><div class="val neg">${fmt(model.tot)}</div></div>
+    <div class="kpi"><div class="lbl">Facilities</div><div class="val">${model.rows.length}</div></div></div>
+    <div class="card"><h3>Loans / Bank Overdraft <span class="hint">accrued interest grows daily</span></h3>
+    ${tableFor(['Facility','Principal','Rate p.a.','Since','Accrued int.','Total owed'],
+      rows.split('</tr>').filter(Boolean).map(r=>r+'</tr>'),foot)}</div>`;
+}
+
+function viewCash(model){
+  const rows=model.rows.map(c=>`<tr><td><b>${c.ccy}</b></td><td>${fmtNum(c.bal, c.ccy==='ARS'?0:2)}</td>
+    <td>${fmt(c.usd)}</td></tr>`).join('');
+  const foot=`<td>Total</td><td></td><td>${fmt(model.tot)}</td>`;
+  return `<div class="kpis">
+    <div class="kpi"><div class="lbl">Total Cash</div><div class="val">${fmt(model.tot)}</div></div></div>
+    <div class="card"><h3>Cash Position <span class="hint">derived from the ledger — single source of truth</span></h3>
+    ${tableFor(['Currency','Balance (native)','Value'],rows.split('</tr>').filter(Boolean).map(r=>r+'</tr>'),foot)}
+    <div class="note">Each balance = opening balance + every ledger flow in that currency. Edit the ledger to change cash.</div></div>`;
+}
+
+function viewLedger(){
+  const rows=ledgerRows().reverse().map(t=>`<tr><td>${t.date}</td><td>${t.type}</td><td><span class="tag">${t.account||''}</span></td>
+    <td class="muted">${t.asset_class}</td>
+    <td>${t.instrument}</td><td>${t.ccy}</td><td class="${cls(t.cash_flow)}">${fmtNum(t.cash_flow, t.ccy==='ARS'?0:2)}</td>
+    <td>${fmtNum(t.running, t.ccy==='ARS'?0:2)}</td></tr>`).join('');
+  return `<div class="card"><h3>Transaction Ledger <span class="hint">newest first · running balance is per account + currency</span></h3>
+    ${tableFor(['Date','Type','Account','Class','Instrument','Ccy','Cash flow','Running bal (acct·ccy)'],
+      rows.split('</tr>').filter(Boolean).map(r=>r+'</tr>'))}
+    <div class="note">Each running balance tracks one account in one currency — so it shows exactly what that bank/broker holds in cash, and the per-account cash reconciles to it. Filter by account in the header to isolate one.</div></div>`;
+}
+
+/* ---------------- Analysis ---------------- */
+// Each snapshot carries the FX that applied ON ITS DATE, so a value shown in
+// EUR/ARS uses the period's own rate — not today's. This is the fix for
+// "you do not take the price of that currency at the beginning of the period".
+let anClass='ALL';   // Analysis-local asset-class selector
+let anMode='single'; // 'single' | 'compare'
+let anCompareBy='account'; // 'account' | 'class'
+let anCompareSet=null;     // Set of ids to plot; null => all
+let anCmpStart=null, anCmpEnd=null;   // compare window (default year_start..today)
+let anBench='none';        // 'none' | 'sp500' | 'hurdle'
+let groupByInstrument=false; // equities: consolidate same ticker across accounts
+const SERIES_COLORS=['--s1','--s2','--s3','--s4','--s5','--s6','--s7','--s8'];
+const ANALYSIS_CLASSES=['Global Equities','Argentine Equities','Funds','International Bonds',
+  'Argentine Bonds','Structured Products','Options','Futures','Cash'];
+// multi-series indexed line chart (each series rebased to 100 at its first point)
+function multiLineChart(seriesList){
+  const W=560,H=240,padL=42,padR=16,padT=14,padB=34;
+  const all=seriesList.flatMap(s=>s.pts); if(!all.length) return '';
+  const xs=all.map(p=>pdate(p.date).getTime());
+  const xmin=Math.min(...xs),xmax=Math.max(...xs);
+  let ymin=Math.min(...all.map(p=>p.idx)),ymax=Math.max(...all.map(p=>p.idx));
+  const pad=(ymax-ymin)*0.1||1; ymin-=pad; ymax+=pad;
+  const X=t=>padL+((t-xmin)/((xmax-xmin)||1))*(W-padL-padR);
+  const Y=v=>padT+(1-(v-ymin)/((ymax-ymin)||1))*(H-padT-padB);
+  const gy=[ymin,(ymin+ymax)/2,ymax].map(v=>`<line x1="${padL}" y1="${Y(v).toFixed(1)}" x2="${W-padR}" y2="${Y(v).toFixed(1)}" stroke="var(--grid)" stroke-width="1"/><text x="${padL-6}" y="${(Y(v)+3).toFixed(1)}" text-anchor="end" font-size="10">${v.toFixed(0)}</text>`).join('');
+  const base100 = (ymin<100&&ymax>100)?`<line x1="${padL}" y1="${Y(100).toFixed(1)}" x2="${W-padR}" y2="${Y(100).toFixed(1)}" stroke="var(--axis)" stroke-dasharray="3 3"/>`:'';
+  const paths=seriesList.map(s=>{ let d=''; s.pts.forEach((p,i)=>{d+=(i?'L':'M')+X(pdate(p.date).getTime()).toFixed(1)+' '+Y(p.idx).toFixed(1)+' ';});
+    const last=s.pts[s.pts.length-1];
+    const dash=s.dashed?' stroke-dasharray="5 4"':'';
+    return `<path d="${d}" fill="none" stroke="var(${s.color})" stroke-width="${s.dashed?2:2}"${dash}><title>${s.name}</title></path>`+
+      `<circle cx="${X(pdate(last.date).getTime()).toFixed(1)}" cy="${Y(last.idx).toFixed(1)}" r="3.2" fill="var(${s.color})"><title>${s.name}: ${last.idx.toFixed(1)}</title></circle>`;
+  }).join('');
+  const xl=[all[0],all[all.length-1]].map(()=>0); // labels
+  const lab=`<text x="${padL}" y="${H-8}" font-size="10">${seriesList[0].pts[0].date}</text>`+
+    `<text x="${W-padR}" y="${H-8}" text-anchor="end" font-size="10">${seriesList[0].pts[seriesList[0].pts.length-1].date}</text>`;
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" preserveAspectRatio="xMidYMid meet">${gy}${base100}${paths}${lab}</svg>`;
+}
+// live per-account and per-class net worth (USD), for the "today" endpoint of any slice
+function liveBreakdowns(){
+  const saved=state.account; state.account='ALL'; const mAll=buildModel(); state.account=saved;
+  const byClass=Object.fromEntries(mAll.classes); byClass['Loans']=-mAll.liab;
+  const accts=accountBreakdown(); // [{id,net,classMap,liab}]
+  const byAcct=Object.fromEntries(accts.map(a=>[a.id,a.net]));
+  const acctClass={}; accts.forEach(a=>{ acctClass[a.id]={...a.classMap, Loans:-a.liab}; });
+  return {total:mAll.net, byClass, byAcct, acctClass};
+}
+// USD value of the selected (account × class) slice at a historical snapshot
+function sliceHistUSD(sp, acct, klass, live){
+  if(acct==='ALL' && klass==='ALL') return sp.net_worth_usd;
+  if(acct!=='ALL' && klass==='ALL') return (sp.by_account||{})[acct] ?? 0;
+  if(acct==='ALL' && klass!=='ALL') return (sp.by_class||{})[klass] ?? 0;
+  const base=(sp.by_account||{})[acct] ?? 0;                 // intersection: scale account path
+  const share = live.byAcct[acct] ? ((live.acctClass[acct]||{})[klass]||0)/live.byAcct[acct] : 0;
+  return base*share;
+}
+function sliceLiveUSD(acct, klass, live){
+  if(acct==='ALL' && klass==='ALL') return live.total;
+  if(acct!=='ALL' && klass==='ALL') return live.byAcct[acct]||0;
+  if(acct==='ALL' && klass!=='ALL') return live.byClass[klass]||0;
+  return (live.acctClass[acct]||{})[klass]||0;
+}
+function snapshotSeries(acct, klass){
+  const live=liveBreakdowns();
+  const s=DATA.snapshots.map(x=>({date:x.date, usd:sliceHistUSD(x,acct,klass,live),
+    fx:x.fx||{EUR_per_USD:state.fx.EUR_per_USD, ars_rates:state.fx.ars_rates}}));
+  s.push({date:today().toISOString().slice(0,10), usd:sliceLiveUSD(acct,klass,live), fx:state.fx});
+  s.sort((a,b)=> a.date<b.date?-1:1);
+  s.forEach(p=>{ p.value = dispAt(p.usd, p.fx); });   // display ccy at each point's own fx
+  return s;
+}
+function pointAt(series,dateStr){
+  let p=series[0];
+  for(const q of series){ if(q.date<=dateStr) p=q; else break; }
+  return p;
+}
+// build one indexed series per account or asset class, rebased to 100 at window start [a,b]
+function windowIndex(fullPts, a, b){
+  const base = pointAt(fullPts, a).value || 1;                 // value at/just before window start
+  const inWin = fullPts.filter(p=>p.date>=a && p.date<=b);
+  const pts = (inWin.length && inWin[0].date===a) ? inWin : [{date:a, value:base}, ...inWin];
+  pts.forEach(p=>p.idx = 100*p.value/base);
+  const endVal = pointAt(fullPts, b).value;
+  return {pts, ret: base? endVal/base-1 : 0, now:endVal};
+}
+function compareSeries(by, ids, a, b){
+  const live=liveBreakdowns();
+  const snaps=[...DATA.snapshots].sort((x,y)=> x.date<y.date?-1:1);
+  const tdy=today().toISOString().slice(0,10);
+  return ids.map((id,i)=>{
+    const full=snaps.map(sp=>{
+      const usd = by==='account'? ((sp.by_account||{})[id]||0) : ((sp.by_class||{})[id]||0);
+      const fx=sp.fx||{EUR_per_USD:state.fx.EUR_per_USD,ars_rates:state.fx.ars_rates};
+      return {date:sp.date, value:dispAt(usd,fx)};
+    });
+    full.push({date:tdy, value:dispAt(by==='account'?(live.byAcct[id]||0):(live.byClass[id]||0), state.fx)});
+    const w=windowIndex(full, a, b);
+    return {id, name: by==='account'?ACCT_NAME(id):id, color:SERIES_COLORS[i%8], pts:w.pts, now:w.now, ytd:w.ret};
+  });
+}
+// benchmark series over the same window (S&P 500 index, or a fixed hurdle rate)
+function benchmarkSeries(a, b){
+  if(anBench==='none') return null;
+  const snaps=[...DATA.snapshots].sort((x,y)=> x.date<y.date?-1:1);
+  const tdy=today().toISOString().slice(0,10);
+  if(anBench==='sp500'){
+    const full=snaps.filter(sp=>sp.sp500!=null).map(sp=>({date:sp.date, value:sp.sp500}));
+    const nowLvl=(DATA.benchmarks||{}).sp500_now; if(nowLvl) full.push({date:tdy, value:nowLvl});
+    if(full.length<2) return null;
+    const w=windowIndex(full, a, b);
+    return {id:'__bench', name:'S&P 500', color:'--ink-2', dashed:true, pts:w.pts, now:w.now, ytd:w.ret, isBench:true};
+  }
+  // fixed hurdle: compounding line from 100
+  const h=((DATA.benchmarks||{}).hurdle_pct||8)/100;
+  const mid=snaps.map(s=>s.date).filter(dt=>dt>a && dt<b);
+  const uniq=[...new Set([a, ...mid, (b>tdy?tdy:b)])].sort();
+  const pts=uniq.map(dt=>({date:dt, idx:100*Math.pow(1+h, Math.max(0,daysBetween(pdate(a),pdate(dt)))/365)}));
+  return {id:'__bench', name:`Hurdle ${(h*100).toFixed(0)}%/yr`, color:'--ink-2', dashed:true, pts, now:null, ytd:pts[pts.length-1].idx/100-1, isBench:true};
+}
+function toggleCompare(id){
+  if(!anCompareSet) anCompareSet=new Set();
+  if(anCompareSet.has(id)) anCompareSet.delete(id); else anCompareSet.add(id);
+  render();
+}
+window.__series=null;
+function computeRange(){
+  const s=window.__series; if(!s) return;
+  if(!document.getElementById('rngStart')) return;   // not in single mode
+  const chart=document.getElementById('anChart');
+  const a=document.getElementById('rngStart').value, b=document.getElementById('rngEnd').value;
+  if(!a||!b) return;
+  const pa=pointAt(s,a), pb=pointAt(s,b);
+  const va=pa.value, vb=pb.value;               // both already in display ccy at their own fx
+  const ret= va? vb/va-1 : 0;
+  const days=Math.max(1,daysBetween(pdate(a),pdate(b)));
+  const ann=days>0? Math.pow(1+ret,365/days)-1 : 0;
+  // redraw the chart to the selected window (this is what "updates with the range")
+  if(chart){
+    const win=s.filter(p=>p.date>=a && p.date<=b);
+    const pts=(win.length>=2?win:[pa,pb]);
+    chart.innerHTML=lineChart(pts);
+  }
+  const fxNote = state.ccy==='USD' ? '' :
+    ` <span class="muted">(${state.ccy} at each date's own rate: ${a} @ ${fmtNum(perUSDat(pa.fx,state.ccy),state.ccy==='ARS'?0:4)}, ${b} @ ${fmtNum(perUSDat(pb.fx,state.ccy),state.ccy==='ARS'?0:4)})</span>`;
+  document.getElementById('rngOut').innerHTML=
+    `<div class="barrow" style="grid-template-columns:1fr auto"><span class="muted">Value on ${a}</span><b>${CCY_SYM[state.ccy]}${fmtNum(va,state.ccy==='ARS'?0:2)}</b></div>`+
+    `<div class="barrow" style="grid-template-columns:1fr auto"><span class="muted">Value on ${b}</span><b>${CCY_SYM[state.ccy]}${fmtNum(vb,state.ccy==='ARS'?0:2)}</b></div>`+
+    `<div class="barrow" style="grid-template-columns:1fr auto"><span class="muted">Return over ${days} days</span><b class="${cls(ret)}">${(ret*100).toFixed(2)}%</b></div>`+
+    `<div class="barrow" style="grid-template-columns:1fr auto"><span class="muted">Annualized</span><b class="${cls(ann)}">${(ann*100).toFixed(2)}%</b></div>`+
+    (state.ccy!=='USD'?`<div class="note" style="margin-top:8px">Return computed in ${state.ccy} using the FX of each endpoint date${fxNote}.</div>`:'');
+}
+const AN_MODE_TOGGLE=()=>`<div class="seg" style="margin-bottom:14px">
+    <button class="${anMode==='single'?'active':''}" onclick="anMode='single';render()">Single slice</button>
+    <button class="${anMode==='compare'?'active':''}" onclick="anMode='compare';render()">Compare</button></div>`;
+function viewCompare(m){
+  const by=anCompareBy;
+  const snapDates=[...DATA.snapshots].map(s=>s.date).sort();
+  const td=today().toISOString().slice(0,10);
+  if(!anCmpStart) anCmpStart=DATA.meta.year_start;
+  if(!anCmpEnd) anCmpEnd=td;
+  const a=anCmpStart, b=anCmpEnd;
+  const days=Math.max(1,daysBetween(pdate(a),pdate(b)));
+  const allIds = by==='account'? DATA.accounts.map(x=>x.id) : ANALYSIS_CLASSES;
+  if(!anCompareSet) anCompareSet=new Set(allIds);
+  const chosen = allIds.filter(id=>anCompareSet.has(id));
+  const ids = chosen.length? chosen : allIds;
+  let series=compareSeries(by, ids, a, b);
+  const bench=benchmarkSeries(a,b);
+  const plot = bench? series.concat([bench]) : series;
+  const chips=allIds.map((id,i)=>{
+    const on=anCompareSet.has(id); const nm=by==='account'?ACCT_NAME(id):id;
+    return `<button class="chipbtn${on?' on':''}" onclick="toggleCompare('${id}')"><i style="background:var(${SERIES_COLORS[i%8]})"></i>${nm}</button>`;
+  }).join('');
+  const legItems=series.concat(bench?[bench]:[]);
+  const legend=legItems.map(s=>`<span>${s.isBench?`<i style="width:12px;height:0;border-top:2px dashed var(${s.color});display:inline-block;vertical-align:middle"></i>`:chip(s.color)} ${s.name} <b class="${cls(s.ytd)}">${(s.ytd*100).toFixed(1)}%</b></span>`).join('');
+  const rank=legItems.slice().sort((x,y)=>y.ytd-x.ytd).map(s=>`<tr><td>${s.isBench?'⋯':chip(s.color)} ${s.name}${s.isBench?' <span class="tag">benchmark</span>':''}</td>
+    <td>${s.now!=null?CCY_SYM[state.ccy]+fmtNum(s.now,0):'<span class="muted">—</span>'}</td><td class="${cls(s.ytd)}">${(s.ytd*100).toFixed(1)}%</td></tr>`).join('');
+  const rangeLbl = (a===DATA.meta.year_start && b===td)?'YTD':`${a} → ${b}`;
+  const benchSel=`<select id="anBenchSel" onchange="anBench=this.value;render()">
+      <option value="none"${anBench==='none'?' selected':''}>No benchmark</option>
+      <option value="sp500"${anBench==='sp500'?' selected':''}>S&P 500</option>
+      <option value="hurdle"${anBench==='hurdle'?' selected':''}>Hurdle ${((DATA.benchmarks||{}).hurdle_pct||8)}%/yr</option>
+    </select>`;
+  return AN_MODE_TOGGLE()+`
+  <div class="card" style="margin-bottom:16px;display:flex;gap:16px 20px;align-items:end;flex-wrap:wrap">
+    <div><span class="muted" style="font-size:12px">Compare by</span><br>
+      <div class="seg" style="margin-top:4px"><button class="${by==='account'?'active':''}" onclick="anCompareBy='account';anCompareSet=null;render()">Accounts</button>
+        <button class="${by==='class'?'active':''}" onclick="anCompareBy='class';anCompareSet=null;render()">Asset classes</button></div></div>
+    <div><label style="font-size:11.5px" class="muted">From</label><input type="date" id="cmpStart" value="${a}" min="${snapDates[0]}" max="${td}" onchange="anCmpStart=this.value;render()"></div>
+    <div><label style="font-size:11.5px" class="muted">To</label><input type="date" id="cmpEnd" value="${b}" min="${snapDates[0]}" max="${td}" onchange="anCmpEnd=this.value;render()"></div>
+    <div><label style="font-size:11.5px" class="muted">Benchmark</label><br>${benchSel}</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-left:auto;max-width:60%;justify-content:flex-end">${chips}</div>
+  </div>
+  <div class="card"><h3>Indexed performance <span class="hint">rebased to 100 at ${a}, ${state.ccy} at each date's FX · ${days} days</span></h3>
+    ${multiLineChart(plot)}
+    <div class="legend" style="margin-top:12px">${legend}</div>
+    <div class="note">Each line is rebased to 100 at <b>${a}</b>, so slopes compare <b>returns</b> over ${rangeLbl} directly regardless of size.${bench?` The dashed line is the ${anBench==='sp500'?'S&P 500':'fixed hurdle'} benchmark.`:''} ${state.ccy!=='USD'?'Currency effects are included — each point uses its own date’s FX.':'Toggle EUR/ARS in the header to compare in another currency.'}</div>
+  </div>
+  <div class="card"><h3>Ranking <span class="hint">return over ${rangeLbl}, in ${state.ccy}, best to worst</span></h3>
+    ${tableFor([by==='account'?'Account':'Asset class','Value now','Return'],rank.split('</tr>').filter(Boolean).map(r=>r+'</tr>'))}
+  </div>`;
+}
+function viewAnalysis(m){
+  if(anMode==='compare') return viewCompare(m);
+  const acct=state.account, klass=anClass;
+  const s=snapshotSeries(acct, klass); window.__series=s;
+  const yearStart=s[0].value, cur=s[s.length-1].value, ytd= yearStart? cur/yearStart-1:0;
+  const sliceLabel = (acct==='ALL'?'Whole portfolio':ACCT_NAME(acct)) + (klass==='ALL'?'':' · '+klass);
+  // income & per-instrument respect BOTH filters
+  const LCLASS={'International Bonds':'Bonds Intl','Argentine Bonds':'Bonds ARG','Structured Products':'Structured','Global Equities':'Equities Global','Argentine Equities':'Equities ARG','Funds':'Funds','Options':'Options','Futures':'Futures','Cash':'Cash'};
+  const income=ledgerFiltered().filter(t=>(t.type==='Coupon'||t.type==='Dividend') && (klass==='ALL'||t.asset_class===LCLASS[klass])).reduce((a,t)=>a+toUSD(t.cash_flow,t.ccy),0);
+  const incomeYield= (cur&&perUSDat(state.fx,state.ccy))? income/(cur/perUSDat(state.fx,state.ccy)):0;
+  const assets=[]
+    .concat(klass==='ALL'||klass==='Global Equities'? m.eg.rows.map(r=>({n:r.ticker,c:'Global Eq',y:r.ytd,v:r.mvU})):[])
+    .concat(klass==='ALL'||klass==='Argentine Equities'? m.ea.rows.map(r=>({n:r.ticker,c:'ARG Eq',y:r.ytd,v:r.mvU})):[])
+    .concat(klass==='ALL'||klass==='International Bonds'? m.bi.rows.map(r=>({n:r.id,c:'Intl Bond',y:r.ytd,v:r.dirtyU})):[])
+    .concat(klass==='ALL'||klass==='Argentine Bonds'? m.ba.rows.map(r=>({n:r.id,c:'ARG Bond',y:r.ytd,v:r.dirtyU})):[]);
+  assets.sort((a,b)=>b.y-a.y);
+  const arows=assets.length? assets.map(a=>`<tr><td>${a.n} <span class="tag">${a.c}</span></td><td>${fmt(a.v)}</td>
+    <td class="${cls(a.y)}">${(a.y*100).toFixed(1)}%</td></tr>`).join('')
+    : `<tr><td colspan="3" class="muted">No priced instruments in this slice (e.g. Cash / Options / Futures have no price-YTD).</td></tr>`;
+  const best=assets[0], worst=assets[assets.length-1];
+  const ys=DATA.meta.year_start, td=today().toISOString().slice(0,10);
+  const dccy=v=>CCY_SYM[state.ccy]+fmtNum(v,0);
+  const interNote = (acct!=='ALL'&&klass!=='ALL')
+    ? `<div class="note" style="margin-bottom:14px">Slice = <b>${ACCT_NAME(acct)} · ${klass}</b>. Historical path scales the account's history by this sleeve's current share of the account (a template approximation; the connector can log exact per-slice history going forward).</div>` : '';
+  const classSel=`<select id="anClassSel" onchange="anClass=this.value;render();">
+      <option value="ALL"${klass==='ALL'?' selected':''}>All asset classes</option>
+      ${ANALYSIS_CLASSES.map(c=>`<option value="${c}"${c===klass?' selected':''}>${c}</option>`).join('')}</select>`;
+  return AN_MODE_TOGGLE()+`${interNote}<div class="card" style="margin-bottom:16px;display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+      <div><span class="muted" style="font-size:12px">Analyzing</span><div style="font-size:16px;font-weight:700">${sliceLabel}</div></div>
+      <div style="margin-left:auto;display:flex;gap:10px;align-items:center">
+        <span class="muted" style="font-size:12px">Account: <b>${acct==='ALL'?'All':ACCT_NAME(acct)}</b> <span class="tag">header filter</span></span>
+        <label style="font-size:12px" class="muted">Asset class</label>${classSel}
+      </div>
+    </div>
+  <div class="kpis">
+    <div class="kpi"><div class="lbl">YTD (${state.ccy})</div><div class="val ${cls(ytd)}">${(ytd*100).toFixed(1)}%</div><div class="sub2">${dccy(yearStart)} → ${dccy(cur)}</div></div>
+    <div class="kpi"><div class="lbl">Value Now</div><div class="val">${CCY_SYM[state.ccy]}${fmtNum(cur,state.ccy==='ARS'?0:0)}</div><div class="sub2">${sliceLabel}</div></div>
+    <div class="kpi"><div class="lbl">Income (coupons+div)</div><div class="val pos">${fmt(income)}</div><div class="sub2">yield ${(incomeYield*100).toFixed(2)}%</div></div>
+    <div class="kpi"><div class="lbl">Best / Worst YTD</div><div class="val" style="font-size:16px">${best?`<span class="pos">${best.n} ${(best.y*100).toFixed(0)}%</span> · <span class="neg">${worst.n} ${(worst.y*100).toFixed(0)}%</span>`:'<span class="muted">n/a</span>'}</div></div>
+  </div>
+  <div class="grid2">
+    <div class="card"><h3>${klass==='ALL'&&acct==='ALL'?'Net worth':'Value'} over time <span class="hint">in ${state.ccy}, each point at its own date's FX</span></h3>
+      <div id="anChart"></div>
+      <div class="note">Series = ${sliceLabel}. The chart redraws to your selected range. ${state.ccy!=='USD'?'Values use each date’s own exchange rate.':''}</div></div>
+    <div class="card"><h3>Custom date-range return</h3>
+      <div class="ops" style="grid-template-columns:1fr 1fr">
+        <div><label>Start</label><input type="date" id="rngStart" value="${ys}" min="${s[0].date}" max="${td}" oninput="computeRange()"></div>
+        <div><label>End</label><input type="date" id="rngEnd" value="${td}" min="${s[0].date}" max="${td}" oninput="computeRange()"></div>
+      </div>
+      <div id="rngOut" style="margin-top:14px"></div>
+      <div class="note">Uses the nearest snapshot at or before each date. Annualized assumes simple compounding.</div>
+    </div>
+  </div>
+  <div class="card"><h3>Per-instrument YTD <span class="hint">price return since ${ys}${acct!=='ALL'?' · '+ACCT_NAME(acct):''}${klass!=='ALL'?' · '+klass:''}</span></h3>
+    ${tableFor(['Instrument','Market value','Price YTD'],arows.split('</tr>').filter(Boolean).map(r=>r+'</tr>'))}
+  </div>`;
+}
+
+function viewPnL(m){
+  const ur=m.unrealByClass.filter(c=>Math.abs(c[1])>0.005);
+  const urRows=m.unrealByClass.map(c=>`<tr><td>${c[0]}</td><td class="${cls(c[1])}">${sign(c[1])}</td></tr>`).join('');
+  const rz=m.realizedEvents;
+  const rzRows=rz.length? rz.map(e=>`<tr><td>${e.date}</td><td>${e.instrument} <span class="tag">${e.cls}</span></td>
+    <td>${fmtNum(e.qty)}</td><td>${CCY_SYM[e.ccy]||''}${fmtNum(e.proceeds,2)}</td><td>${CCY_SYM[e.ccy]||''}${fmtNum(e.cost,2)}</td>
+    <td class="${cls(e.realizedU)}">${sign(e.realizedU)}</td></tr>`).join('')
+    : `<tr><td colspan="6" class="muted">No closed trades yet. Record a sell in the Operations tab.</td></tr>`;
+  const total=m.unreal+m.realized+m.income;
+  return `<div class="kpis">
+    <div class="kpi"><div class="lbl">Unrealized P&L</div><div class="val ${cls(m.unreal)}">${sign(m.unreal)}</div><div class="sub2">open positions, mark vs cost</div></div>
+    <div class="kpi"><div class="lbl">Realized P&L</div><div class="val ${cls(m.realized)}">${sign(m.realized)}</div><div class="sub2">closed trades (avg cost)</div></div>
+    <div class="kpi"><div class="lbl">Income</div><div class="val pos">${fmt(m.income)}</div><div class="sub2">coupons + dividends</div></div>
+    <div class="kpi"><div class="lbl">Total P&L</div><div class="val ${cls(total)}">${sign(total)}</div><div class="sub2">unrealized + realized + income</div></div>
+  </div>
+  <div class="grid2">
+    <div class="card"><h3>Unrealized P&L by asset class <span class="hint">current value − cost basis, in ${state.ccy}</span></h3>
+      ${tableFor(['Asset class','Unrealized P&L'],urRows.split('</tr>').filter(Boolean).map(r=>r+'</tr>'),
+        `<td>Total unrealized</td><td class="${cls(m.unreal)}">${sign(m.unreal)}</td>`)}
+      <div class="note">Equities: qty×(price−avg cost). Bonds: face×(price−cost)/100. Structured: notional×(mark−cost)/100. Options & futures: (price−entry)×size.</div>
+    </div>
+    <div class="card"><h3>Realized P&L — closed trades <span class="hint">proceeds − average cost of units sold</span></h3>
+      ${tableFor(['Date','Instrument','Qty','Proceeds','Cost','Realized (USD)'],rzRows.split('</tr>').filter(Boolean).map(r=>r+'</tr>'),
+        `<td>Total realized</td><td></td><td></td><td></td><td></td><td class="${cls(m.realized)}">${sign(m.realized)}</td>`)}
+      <div class="note">Built from Buy/Sell rows in the ledger (average-cost). Options/futures P&L is shown as unrealized mark-to-market instead. Realized converted at current FX.</div>
+    </div>
+  </div>`;
+}
+
+/* ---------------- Operations (buy / sell / cash events) ---------------- */
+const LS_KEY='inv_dashboard_data_v1';
+function allInstruments(){
+  const names=new Set();
+  (DATA.equities_global||[]).forEach(x=>names.add(x.ticker));
+  (DATA.equities_arg||[]).forEach(x=>names.add(x.ticker));
+  (DATA.bonds_intl||[]).concat(DATA.bonds_arg||[],DATA.structured||[],DATA.funds||[]).forEach(x=>names.add(x.id));
+  (DATA.options||[]).forEach(x=>names.add(x.id));
+  (DATA.futures||[]).forEach(x=>names.add(x.id));
+  (DATA.loans||[]).forEach(x=>names.add(x.id));
+  return [...names];
+}
+/* ---- adaptive Operations form ---- */
+// field spec per product type: [id, label, type]  (type: text|number|date|list of "select:A,B")
+const OP_SPEC={
+  'Equities Global':[['opInst','Ticker (e.g. FOUR)','text'],['opName','Name','text'],['opISIN','ISIN','text'],['opQty','Quantity','number'],['opPrice','Price','number']],
+  'Equities ARG':[['opInst','Ticker','text'],['opName','Name','text'],['opISIN','ISIN','text'],['opQty','Quantity','number'],['opPrice','Price (ARS)','number']],
+  'Funds':[['opInst','Fund ID','text'],['opName','Name','text'],['opISIN','ISIN','text'],['opFundType','Type','select:ETF,Mutual Fund,Money Market FCI,Hedge Fund,Private Equity,Real Estate'],['opUnits','Units / quotas','number'],['opNav','NAV (price/unit)','number']],
+  'Bonds Intl':[['opInst','Bond ID','text'],['opName','Name','text'],['opISIN','ISIN','text'],['opFace','Face value','number'],['opCoupon','Coupon %','number'],['opFreq','Coupons/yr','number'],['opPrice','Price % (e.g. 98.5)','number'],['opLast','Last coupon','date'],['opNext','Next coupon','date'],['opMaturity','Maturity','date']],
+  'Bonds ARG':[['opInst','Bond ID','text'],['opName','Name','text'],['opISIN','ISIN','text'],['opFace','Face value','number'],['opCoupon','Coupon %','number'],['opFreq','Coupons/yr','number'],['opPrice','Price % (e.g. 72.5)','number'],['opLast','Last coupon','date'],['opNext','Next coupon','date'],['opMaturity','Maturity','date']],
+  'Structured':[['opInst','Product ID','text'],['opName','Description','text'],['opISIN','ISIN','text'],['opNotional','Notional','number'],['opAccrual','Accrual % p.a.','number'],['opFreq','Coupons/yr','number'],['opCost','Cost % (paid)','number'],['opMark','Mark % (now)','number'],['opIssue','Issue date','date'],['opLast','Last coupon','date'],['opNext','Next coupon','date'],['opMaturity','Maturity','date']],
+  'Options':[['opInst','Position ID','text'],['opUnd','Underlying','text'],['opISIN','Und. ISIN','text'],['opOptType','Type','select:Call,Put'],['opStrike','Strike','number'],['opExpiry','Expiry','date'],['opContracts','Contracts (– = short)','number'],['opMult','Multiplier','number'],['opPrice','Premium / price','number']],
+  'Futures':[['opInst','Contract ID','text'],['opName','Name','text'],['opFQty','Qty (– = short)','number'],['opEntry','Entry price','number'],['opPrice','Current price','number'],['opMult','Multiplier','number'],['opMargin','Margin','number']],
+  'Loans':[['opInst','Facility ID','text'],['opPrincipal','Principal','number'],['opRate','Rate % p.a.','number'],['opStart','Start date','date']],
+  'Cash':[['opInst','Note (optional)','text']]
+};
+function opFieldHTML(f){
+  const [id,label,type]=f;
+  if(type&&type.startsWith('select:')){
+    const opts=type.slice(7).split(',').map(o=>`<option>${o}</option>`).join('');
+    return `<div><label>${label}</label><select id="${id}">${opts}</select></div>`;
+  }
+  const list = id==='opInst' ? ' list="instList"' : '';
+  return `<div><label>${label}</label><input id="${id}" type="${type}" step="any"${list} oninput="opAutofill()"></div>`;
+}
+function renderOpFields(){
+  const cls_=document.getElementById('opClass').value;
+  const spec=OP_SPEC[cls_]||[];
+  document.getElementById('opFields').innerHTML=spec.map(opFieldHTML).join('');
+  // default currency by class
+  const ccySel=document.getElementById('opCcy');
+  if(ccySel && !ccySel.dataset.touched){ ccySel.value = (cls_==='Equities ARG'||cls_==='Bonds ARG')?'ARS':'USD'; }
+  opAutofill();
+}
+function gv(id){ const e=document.getElementById(id); return e? e.value.trim() : ''; }
+function gn(id){ return parseFloat(gv(id))||0; }
+// compute the gross cash for a buy/sell given the product type
+function opGross(cls_){
+  if(cls_.startsWith('Equities')) return gn('opQty')*gn('opPrice');
+  if(cls_==='Funds') return gn('opUnits')*gn('opNav');
+  if(cls_.startsWith('Bonds')) return gn('opFace')*gn('opPrice')/100;
+  if(cls_==='Structured') return gn('opNotional')*(gn('opCost')||100)/100;
+  if(cls_==='Options') return gn('opContracts')*gn('opMult')*gn('opPrice'); // sign via contracts
+  if(cls_==='Futures') return 0;      // no upfront cost
+  if(cls_==='Loans') return gn('opPrincipal');
+  return 0;
+}
+function opAutofill(){
+  const type=gv('opType'), cls_=gv('opClass'); const cf=document.getElementById('opCash'); if(!cf) return;
+  if(cf.dataset.touched) return;
+  let cash=0; const gross=opGross(cls_);
+  if(cls_==='Options'){ cash = -gross; }          // long (+contracts) costs cash; short (–) receives
+  else if(cls_==='Loans'){ cash = type==='Buy'||type==='Loan Drawdown'? gross : -gross; }
+  else if(cls_==='Futures'){ cash = 0; }
+  else { cash = type==='Buy'? -gross : type==='Sell'? gross : 0; }
+  cf.value = cash? cash.toFixed(2) : '';
+}
+function addOperation(){
+  const type=gv('opType'), cls_=gv('opClass'), acct=gv('opAcct'), ccy=gv('opCcy');
+  const date=gv('opDate')||today().toISOString().slice(0,10);
+  const inst=gv('opInst');
+  if(!inst && cls_!=='Cash'){ alert('Enter an instrument ID / ticker.'); return; }
+  let cash=parseFloat(gv('opCash')); if(isNaN(cash)) cash=0;
+  const in6mo=()=>{const d=today();d.setUTCMonth(d.getUTCMonth()+6);return d.toISOString().slice(0,10);};
+  const in5yr=()=>{const d=today();d.setUTCFullYear(d.getUTCFullYear()+5);return d.toISOString().slice(0,10);};
+  const tdy=today().toISOString().slice(0,10);
+  let qtyForLedger, priceForLedger, note=inst;
+
+  if(type==='Buy'||type==='Sell'){
+    if(cls_==='Equities Global'||cls_==='Equities ARG'){
+      const list=cls_==='Equities Global'?DATA.equities_global:DATA.equities_arg;
+      const qty=gn('opQty'), price=gn('opPrice'); qtyForLedger=qty; priceForLedger=price;
+      let pos=list.find(x=>x.ticker.toLowerCase()===inst.toLowerCase()&&x.account===acct);
+      if(pos){ if(type==='Buy'){const nq=pos.qty+qty; pos.avg_cost=nq?(pos.qty*pos.avg_cost+qty*price)/nq:price; pos.qty=nq;} else pos.qty=Math.max(0,pos.qty-qty); if(price)pos.price=price; }
+      else if(type==='Buy'){ list.push({ticker:inst.toUpperCase(),isin:gv('opISIN'),name:gv('opName')||inst,account:acct,qty,avg_cost:price,price,price_soy:price,ccy}); }
+    } else if(cls_==='Funds'){
+      const units=gn('opUnits'), nav=gn('opNav'); qtyForLedger=units; priceForLedger=nav;
+      DATA.funds=DATA.funds||[];
+      let pos=DATA.funds.find(x=>x.id.toLowerCase()===inst.toLowerCase()&&x.account===acct);
+      if(pos){ if(type==='Buy'){const nu=pos.units+units; pos.cost_nav=nu?(pos.units*(pos.cost_nav||pos.nav)+units*nav)/nu:nav; pos.units=nu;} else pos.units=Math.max(0,pos.units-units); if(nav)pos.nav=nav; }
+      else if(type==='Buy'){ DATA.funds.push({id:inst,isin:gv('opISIN'),name:gv('opName')||inst,account:acct,fund_type:gv('opFundType')||'Mutual Fund',units,nav,cost_nav:nav,nav_soy:nav,ccy,sector:'Fund',country:ccyCountry(ccy)}); }
+    } else if(cls_==='Bonds Intl'||cls_==='Bonds ARG'){
+      const list=cls_==='Bonds Intl'?DATA.bonds_intl:DATA.bonds_arg;
+      const face=gn('opFace'), pricePct=gn('opPrice'); qtyForLedger=face; priceForLedger=pricePct;
+      let pos=list.find(x=>x.id.toLowerCase()===inst.toLowerCase()&&x.account===acct);
+      if(pos){ if(type==='Buy') pos.face+=face; else pos.face=Math.max(0,pos.face-face); if(pricePct)pos.price_pct=pricePct; }
+      else if(type==='Buy'){ list.push({id:inst,isin:gv('opISIN'),name:gv('opName')||inst,account:acct,face,coupon_pct:gn('opCoupon'),freq_per_yr:gn('opFreq')||2,price_pct:pricePct,cost_pct:pricePct,price_pct_soy:pricePct,ccy,last_coupon:gv('opLast')||tdy,next_coupon:gv('opNext')||in6mo(),maturity:gv('opMaturity')||in5yr()}); }
+    } else if(cls_==='Structured'){
+      const notional=gn('opNotional'); qtyForLedger=1; priceForLedger=gn('opCost')||100;
+      let pos=DATA.structured.find(x=>x.id.toLowerCase()===inst.toLowerCase()&&x.account===acct);
+      if(!pos && type==='Buy'){ DATA.structured.push({id:inst,isin:gv('opISIN'),name:gv('opName')||inst,account:acct,notional,cost_pct:gn('opCost')||100,mark_pct:gn('opMark')||gn('opCost')||100,accrual_pct:gn('opAccrual'),freq_per_yr:gn('opFreq')||4,ccy,issue_date:gv('opIssue')||tdy,last_coupon:gv('opLast')||tdy,next_coupon:gv('opNext')||in6mo(),maturity:gv('opMaturity')||in5yr()}); }
+      else if(pos){ if(type==='Buy') pos.notional+=notional; else pos.notional=Math.max(0,pos.notional-notional); }
+    } else if(cls_==='Options'){
+      const contracts=gn('opContracts'), price=gn('opPrice'); qtyForLedger=Math.abs(contracts); priceForLedger=price;
+      let pos=DATA.options.find(x=>x.id.toLowerCase()===inst.toLowerCase()&&x.account===acct);
+      if(!pos && type==='Buy'){ DATA.options.push({id:inst,underlying:gv('opUnd')||inst,underlying_isin:gv('opISIN'),account:acct,type:gv('opOptType')||'Call',strike:gn('opStrike'),expiry:gv('opExpiry')||in6mo(),contracts,multiplier:gn('opMult')||100,entry_premium:price,price,ccy}); }
+      else if(pos){ pos.contracts += (type==='Buy'?contracts:-contracts); if(price)pos.price=price; }
+    } else if(cls_==='Futures'){
+      const q=gn('opFQty'); qtyForLedger=Math.abs(q); priceForLedger=gn('opPrice');
+      if(type==='Buy'){ DATA.futures.push({id:inst,name:gv('opName')||inst,underlying_isin:'',account:acct,qty:q,entry_price:gn('opEntry')||gn('opPrice'),price:gn('opPrice'),multiplier:gn('opMult')||1,margin:gn('opMargin'),ccy}); }
+    }
+  } else if(type==='Loan Drawdown' || cls_==='Loans'){
+    const principal=gn('opPrincipal')||Math.abs(cash);
+    let pos=DATA.loans.find(x=>x.id.toLowerCase()===inst.toLowerCase()&&x.account===acct);
+    if(!pos){ DATA.loans.push({id:inst,account:acct,principal,rate_pct:gn('opRate'),ccy,start_date:gv('opStart')||tdy}); }
+    else pos.principal+=principal;
+  }
+  DATA.ledger.push({date,type,asset_class:cls_,account:acct,instrument:inst||(ccy+' Cash'),ccy,
+    qty:qtyForLedger||undefined,price:priceForLedger||undefined,cash_flow:cash});
+  saveLocal(true);
+  toast(`${type} · ${cls_}: ${note||ccy+' cash'} ${cash>=0?'+':''}${fmtNum(cash,2)} ${ccy}`);
+  render();
+}
+function download(name,text,type){
+  const blob=new Blob([text],{type:type||'text/plain'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+function exportJSON(){ download('portfolio_data.json', JSON.stringify(DATA,null,2), 'application/json'); }
+function exportLedgerCSV(){
+  const hdr=['date','type','asset_class','instrument','ccy','cash_flow'];
+  const lines=[hdr.join(',')].concat(DATA.ledger.map(t=>hdr.map(h=>{
+    const v=t[h]==null?'':(''+t[h]); return /[,"]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; }).join(',')));
+  download('ledger.csv', lines.join('\n'), 'text/csv');
+}
+function saveLocal(silent){ try{ localStorage.setItem(LS_KEY, JSON.stringify(DATA)); if(!silent) toast('Saved to this browser.'); }catch(e){ if(!silent) toast('Browser storage unavailable — use Export instead.'); } }
+function loadLocal(){ try{ const s=localStorage.getItem(LS_KEY); if(s){ DATA=JSON.parse(s); toast('Loaded saved data from this browser.'); render(); } else toast('No saved data in this browser.'); }catch(e){ toast('Could not read browser storage.'); } }
+function resetData(){ DATA=JSON.parse(JSON.stringify(ORIGINAL_DATA)); try{localStorage.removeItem(LS_KEY);}catch(e){} toast('Reset to original sample data.'); render(); }
+function toast(msg){
+  let t=document.getElementById('toast');
+  if(!t){ t=document.createElement('div'); t.id='toast'; t.style.cssText='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--accent);color:var(--surface);padding:10px 18px;border-radius:10px;font-size:13px;font-weight:600;z-index:99;box-shadow:0 4px 16px rgba(0,0,0,.2)'; document.body.appendChild(t); }
+  t.textContent=msg; t.style.opacity='1'; clearTimeout(window.__tt); window.__tt=setTimeout(()=>{t.style.opacity='0';t.style.transition='opacity .5s';},2200);
+}
+/* ---- edit / correct an existing position ---- */
+function allPositions(){
+  const out=[]; const key=o=>o.ticker||o.id;
+  const push=(arr,cls)=>arr&&arr.forEach((o,i)=>out.push({cls,arr,i,label:`${key(o)} · ${cls} · ${o.account||''}`}));
+  push(DATA.equities_global,'Equities Global'); push(DATA.equities_arg,'Equities ARG');
+  push(DATA.funds,'Funds'); push(DATA.bonds_intl,'Bonds Intl'); push(DATA.bonds_arg,'Bonds ARG');
+  push(DATA.structured,'Structured'); push(DATA.options,'Options'); push(DATA.futures,'Futures'); push(DATA.loans,'Loans');
+  return out;
+}
+const _EQF=[['ticker','Ticker','text'],['name','Name','text'],['isin','ISIN','text'],['sector','Sector','text'],['country','Country','text'],['account','Account','acct'],['qty','Quantity','number'],['avg_cost','Avg cost','number'],['price','Price','number'],['price_soy','Start-of-yr price','number'],['ccy','Currency','ccy']];
+const _BDF=[['id','Bond ID','text'],['name','Name','text'],['isin','ISIN','text'],['account','Account','acct'],['face','Face','number'],['coupon_pct','Coupon %','number'],['freq_per_yr','Coupons/yr','number'],['price_pct','Price %','number'],['cost_pct','Cost %','number'],['price_pct_soy','SoY %','number'],['ccy','Currency','ccy'],['last_coupon','Last coupon','date'],['next_coupon','Next coupon','date'],['maturity','Maturity','date'],['sector','Sector','text'],['country','Country','text']];
+const EDIT_FIELDS={
+  'Equities Global':_EQF,'Equities ARG':_EQF,
+  'Funds':[['id','Fund ID','text'],['name','Name','text'],['isin','ISIN','text'],['fund_type','Type','fundtype'],['account','Account','acct'],['units','Units','number'],['nav','NAV','number'],['cost_nav','Cost NAV','number'],['nav_soy','SoY NAV','number'],['ccy','Currency','ccy'],['sector','Sector','text'],['country','Country','text']],
+  'Bonds Intl':_BDF,'Bonds ARG':_BDF,
+  'Structured':[['id','ID','text'],['name','Name','text'],['isin','ISIN','text'],['account','Account','acct'],['notional','Notional','number'],['cost_pct','Cost %','number'],['mark_pct','Mark %','number'],['accrual_pct','Accrual %','number'],['freq_per_yr','Coupons/yr','number'],['ccy','Currency','ccy'],['issue_date','Issue','date'],['last_coupon','Last coupon','date'],['next_coupon','Next coupon','date'],['maturity','Maturity','date']],
+  'Options':[['id','ID','text'],['underlying','Underlying','text'],['account','Account','acct'],['type','Type','opttype'],['strike','Strike','number'],['expiry','Expiry','date'],['contracts','Contracts','number'],['multiplier','Multiplier','number'],['entry_premium','Entry premium','number'],['price','Price','number'],['spot','Spot','number'],['iv','Impl. vol','number'],['ccy','Currency','ccy']],
+  'Futures':[['id','ID','text'],['name','Name','text'],['account','Account','acct'],['qty','Qty','number'],['entry_price','Entry','number'],['price','Price','number'],['multiplier','Multiplier','number'],['margin','Margin','number'],['ccy','Currency','ccy']],
+  'Loans':[['id','ID','text'],['account','Account','acct'],['principal','Principal','number'],['rate_pct','Rate %','number'],['ccy','Currency','ccy'],['start_date','Start date','date']]
+};
+function editFieldHTML(k,label,t,val){
+  val = val==null?'':val;
+  const sel=(opts)=>`<div><label>${label}</label><select id="ed_${k}">${opts.map(o=>`<option${(''+o)===(''+val)?' selected':''}>${o}</option>`).join('')}</select></div>`;
+  if(t==='acct') return sel((DATA.accounts||[]).map(a=>a.id));
+  if(t==='ccy') return sel(['USD','EUR','ARS']);
+  if(t==='opttype') return sel(['Call','Put']);
+  if(t==='fundtype') return sel(['ETF','Mutual Fund','Money Market FCI','Hedge Fund','Private Equity','Real Estate']);
+  const it = t==='date'?'date':t==='number'?'number':'text';
+  return `<div><label>${label}</label><input id="ed_${k}" type="${it}" ${it==='number'?'step="any"':''} value="${(''+val).replace(/"/g,'&quot;')}"></div>`;
+}
+function editSelect(){
+  const v=document.getElementById('editSel').value, box=document.getElementById('editFields');
+  const acts=document.getElementById('editActions');
+  if(v===''){ box.innerHTML=''; acts.style.display='none'; return; }
+  const pos=window.__positions[+v], obj=pos.arr[pos.i];
+  box.innerHTML=(EDIT_FIELDS[pos.cls]||[]).map(([k,l,t])=>editFieldHTML(k,l,t,obj[k])).join('');
+  acts.style.display='flex';
+}
+function saveEdit(){
+  const v=document.getElementById('editSel').value; if(v==='') return;
+  const pos=window.__positions[+v], obj=pos.arr[pos.i];
+  (EDIT_FIELDS[pos.cls]||[]).forEach(([k,l,t])=>{ const el=document.getElementById('ed_'+k); if(!el) return;
+    let val=el.value; if(t==='number'){ val=parseFloat(val); if(isNaN(val)) val=0; } obj[k]=val; });
+  saveLocal(true); toast('Updated '+(obj.ticker||obj.id)); render();
+}
+function deleteEdit(){
+  const v=document.getElementById('editSel').value; if(v==='') return;
+  const pos=window.__positions[+v], nm=pos.arr[pos.i].ticker||pos.arr[pos.i].id;
+  if(!confirm('Delete position "'+nm+'"? Its past ledger entries are kept; only the current holding is removed.')) return;
+  pos.arr.splice(pos.i,1); saveLocal(true); toast('Deleted '+nm); render();
+}
+function viewOperations(m){
+  const insts=allInstruments().map(n=>`<option value="${n}">`).join('');
+  window.__positions=allPositions();
+  const posOpts='<option value="">— pick a position to correct —</option>'+
+    window.__positions.map((p,i)=>`<option value="${i}">${p.label}</option>`).join('');
+  const td=today().toISOString().slice(0,10);
+  const initClass='Equities Global';
+  const initFields=(OP_SPEC[initClass]||[]).map(opFieldHTML).join('');
+  const recent=ledgerRows().reverse().slice(0,8).map(t=>`<tr><td>${t.date}</td><td>${t.type}</td><td><span class="tag">${t.account||''}</span></td><td>${t.instrument}</td>
+    <td>${t.ccy}</td><td class="${cls(t.cash_flow)}">${fmtNum(t.cash_flow,t.ccy==='ARS'?0:2)}</td></tr>`).join('');
+  return `<div class="card"><h3>Add a position / record an operation <span class="hint">pick a product type — the form adapts. New instruments (e.g. FOUR, a new bond, a structured note) are created on Buy.</span></h3>
+    <div class="ops">
+      <div><label>Date</label><input type="date" id="opDate" value="${td}"></div>
+      <div><label>Type</label><select id="opType" onchange="opAutofill()">
+        ${['Buy','Sell','Deposit','Withdrawal','Coupon','Dividend','Loan Drawdown','Fee'].map(x=>`<option>${x}</option>`).join('')}</select></div>
+      <div><label>Account</label><select id="opAcct">
+        ${(DATA.accounts||[]).map(a=>`<option value="${a.id}"${a.id===state.account?' selected':''}>${a.name}</option>`).join('')}</select></div>
+      <div><label>Product type</label><select id="opClass" onchange="renderOpFields()">
+        ${['Equities Global','Equities ARG','Funds','Bonds Intl','Bonds ARG','Structured','Options','Futures','Loans','Cash'].map(x=>`<option${x===initClass?' selected':''}>${x}</option>`).join('')}</select></div>
+      <div><label>Currency</label><select id="opCcy" onchange="this.dataset.touched=1">${['USD','EUR','ARS'].map(x=>`<option>${x}</option>`).join('')}</select></div>
+    </div>
+    <datalist id="instList">${insts}</datalist>
+    <div class="ops" id="opFields" style="margin-top:10px">${initFields}</div>
+    <div class="ops" style="margin-top:10px"><div><label>Cash flow (auto — editable)</label>
+      <input id="opCash" type="number" step="any" placeholder="signed amount" oninput="this.dataset.touched=1"></div></div>
+    <div class="row-actions">
+      <button class="btn primary" onclick="addOperation()">+ Add</button>
+      <button class="btn" onclick="exportJSON()">⭳ Export data (JSON)</button>
+      <button class="btn" onclick="exportLedgerCSV()">⭳ Export ledger (CSV)</button>
+      <button class="btn ghost" onclick="saveLocal(false)">Save to browser</button>
+      <button class="btn ghost" onclick="loadLocal()">Load</button>
+      <button class="btn ghost" onclick="resetData()">Reset</button>
+    </div>
+    <div class="note">The form shows the fields each product needs — equities: qty & price; bonds: face, coupon, maturity…; structured: notional, accrual, cost/mark, coupon dates (fully customizable); options: strike, expiry, contracts; futures: entry, multiplier, margin. On <b>Buy</b> a new instrument is created in the chosen account; buying more of an existing one averages the cost. Same ticker in two accounts stays as two positions (each with its own cost basis). Cash flow auto-fills but you can override. Changes live in this browser — use <b>Export</b> to push back to Excel, or <b>Save to browser</b> to keep them here.</div>
+  </div>
+  <div class="card"><h3>Edit / correct a position <span class="hint">fix a wrong price, ISIN, coupon, account — any field — or delete a position</span></h3>
+    <div class="ops"><div style="grid-column:1/-1;max-width:460px"><label>Position</label>
+      <select id="editSel" onchange="editSelect()">${posOpts}</select></div></div>
+    <div class="ops" id="editFields" style="margin-top:10px"></div>
+    <div class="row-actions" id="editActions" style="display:none">
+      <button class="btn primary" onclick="saveEdit()">Save changes</button>
+      <button class="btn ghost" onclick="deleteEdit()" style="color:var(--bad);border-color:var(--bad)">Delete position</button>
+    </div>
+    <div class="note">This edits the position directly (no ledger entry) — for genuine corrections. To record a real buy/sell that moves cash, use the form above instead. Remember to <b>Export</b> or <b>Save to browser</b> afterwards.</div>
+  </div>
+  <div class="card"><h3>Recent operations</h3>
+    ${tableFor(['Date','Type','Account','Instrument','Ccy','Cash flow'],recent.split('</tr>').filter(Boolean).map(r=>r+'</tr>'))}</div>`;
+}
+
+/* ---------------- Accounts (by bank / broker) ---------------- */
+function accountBreakdown(){
+  const saved=state.account; const out=[];
+  (DATA.accounts||[]).forEach(a=>{
+    state.account=a.id; const m=buildModel();
+    out.push({id:a.id, name:a.name, type:a.type, net:m.net, gross:m.gross, liab:m.liab,
+      classMap:Object.fromEntries(m.classes), cashUsd:m.ch.tot});
+  });
+  state.account=saved;
+  return out;
+}
+const CLASS_ORDER=[['Global Equities','--s1'],['Argentine Equities','--s2'],['Funds','--s9'],['International Bonds','--s3'],
+  ['Argentine Bonds','--s4'],['Structured Products','--s5'],['Options','--s6'],['Futures','--s7'],['Cash','--s8']];
+function viewAccounts(m){
+  const rows=accountBreakdown().filter(a=>Math.abs(a.gross)>0.01||Math.abs(a.liab)>0.01);
+  const totalNet=rows.reduce((s,a)=>s+a.net,0);
+  rows.sort((a,b)=>b.net-a.net);
+  const maxNet=Math.max(...rows.map(a=>Math.abs(a.net)),1);
+  const bars=rows.map(a=>`<div class="barrow"><span>${a.name} <span class="tag">${a.type}</span></span>
+    <div class="bartrack"><div class="barfill" style="width:${Math.abs(a.net)/maxNet*100}%;background:var(--s1)"></div></div>
+    <span style="text-align:right">${fmt(a.net)}</span></div>`).join('');
+  // matrix: rows = accounts, cols = asset classes + Loans + Net
+  const head=['Account'].concat(CLASS_ORDER.map(c=>c[0].replace(' Products','').replace('International','Intl').replace('Argentine','ARG').replace(' Equities',' Eq'))).concat(['Loans','NET']);
+  const mrows=rows.map(a=>{
+    const cells=CLASS_ORDER.map(c=>{ const v=a.classMap[c[0]]||0; return `<td>${Math.abs(v)>0.01?fmt(v):'<span class="muted">–</span>'}</td>`;}).join('');
+    return `<tr><td><b>${a.name}</b></td>${cells}<td class="${a.liab?'neg':''}">${a.liab?('-'+fmt(a.liab)):'<span class="muted">–</span>'}</td><td><b>${fmt(a.net)}</b></td></tr>`;
+  }).join('');
+  // totals row
+  const totCells=CLASS_ORDER.map(c=>{ const v=rows.reduce((s,a)=>s+(a.classMap[c[0]]||0),0); return `<td>${Math.abs(v)>0.01?fmt(v):'–'}</td>`;}).join('');
+  const totLiab=rows.reduce((s,a)=>s+a.liab,0);
+  const foot=`<td>All accounts</td>${totCells}<td class="${totLiab?'neg':''}">${totLiab?('-'+fmt(totLiab)):'–'}</td><td>${fmt(totalNet)}</td>`;
+  const biggest=rows[0];
+  return `<div class="kpis">
+    <div class="kpi"><div class="lbl">Total Net Worth</div><div class="val">${fmt(totalNet)}</div><div class="sub2">${rows.length} accounts</div></div>
+    <div class="kpi"><div class="lbl">Largest account</div><div class="val" style="font-size:18px">${biggest.name}</div><div class="sub2">${fmt(biggest.net)} · ${pct(biggest.net/totalNet)}</div></div>
+    <div class="kpi"><div class="lbl">Brokers / Banks</div><div class="val">${rows.filter(a=>a.type==='Broker').length} / ${rows.filter(a=>a.type==='Bank').length}</div></div>
+    <div class="kpi"><div class="lbl">Viewing</div><div class="val" style="font-size:18px">${state.account==='ALL'?'All accounts':ACCT_NAME(state.account)}</div><div class="sub2">use the header filter to drill in</div></div>
+  </div>
+  <div class="grid2">
+    <div class="card"><h3>Net worth by account</h3>${bars}
+      <div class="note">Tip: pick an account in the header dropdown to filter every tab to just that bank/broker.</div></div>
+    <div class="card"><h3>Account types</h3>
+      ${tableFor(['Account','Type','Gross assets','Loans','Net worth'],
+        rows.map(a=>`<tr><td>${a.name}</td><td><span class="pill">${a.type}</span></td><td>${fmt(a.gross)}</td>
+          <td class="${a.liab?'neg':''}">${a.liab?('-'+fmt(a.liab)):'–'}</td><td><b>${fmt(a.net)}</b></td></tr>`),
+        `<td>Total</td><td></td><td></td><td></td><td>${fmt(totalNet)}</td>`)}
+    </div>
+  </div>
+  <div class="card"><h3>Holdings by account × asset class <span class="hint">market value in ${state.ccy}</span></h3>
+    <div class="tblwrap"><table><thead><tr>${head.map(h=>`<th>${h}</th>`).join('')}</tr></thead>
+      <tbody>${mrows}</tbody><tfoot><tr>${foot}</tr></tfoot></table></div>
+    <div class="note">Every position carries an account tag; add or move positions per account in the Operations tab.</div>
+  </div>`;
+}
+
+/* ---------------- Alerts ---------------- */
+const SEV_COLOR={crit:'--bad',warn:'--s4',good:'--good',info:'--s1'};
+function alertsCard(){
+  const al=alertsList(); if(!al.length) return '';
+  const items=al.slice(0,8).map(a=>`<div style="display:flex;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid var(--grid)">
+    <span class="dot" style="background:var(${SEV_COLOR[a.sev]})"></span><span class="pill">${a.tag}</span>
+    <span style="font-size:13px">${a.text}</span></div>`).join('');
+  const more=al.length>8?`<div class="note">+${al.length-8} more — see the Risk tab and the connector's alert digest.</div>`:'';
+  return `<div class="card" style="margin-bottom:18px"><h3>Alerts <span class="hint">${al.length} active · coupons, expiries, maturities, big moves, loan interest</span></h3>${items}${more}</div>`;
+}
+
+/* ---------------- Income (forward calendar + maturity ladder) ---------------- */
+function viewIncome(m){
+  const inc=projectIncome(12), months=incomeByMonth();
+  const total12=months.reduce((s,x)=>s+x.total,0);
+  const maxM=Math.max(...months.map(x=>x.total),1);
+  const bars=months.map(mo=>`<div class="barrow" style="grid-template-columns:74px 1fr 100px">
+    <span>${mo.key}</span><div class="bartrack"><div class="barfill" style="width:${mo.total/maxM*100}%;background:var(--s3)"></div></div>
+    <span style="text-align:right">${fmt(mo.total)}</span></div>`).join('') || '<div class="muted">No projected income in the selected slice.</div>';
+  const upcoming=inc.slice(0,16).map(e=>`<tr><td>${e.date}</td><td>${e.instrument} <span class="tag">${e.account}</span></td><td>${e.type}</td><td>${fmt(e.amountU)}</td></tr>`).join('')
+    || '<tr><td colspan="4" class="muted">—</td></tr>';
+  const lad=maturityLadder(); const maxY=Math.max(...lad.byYear.map(y=>y.total),1);
+  const ladBars=lad.byYear.map(y=>`<div class="barrow" style="grid-template-columns:56px 1fr 110px">
+    <span>${y.year}</span><div class="bartrack"><div class="barfill" style="width:${y.total/maxY*100}%;background:var(--s4)"></div></div>
+    <span style="text-align:right">${fmt(y.total)}</span></div>`).join('') || '<div class="muted">No maturities in the selected slice.</div>';
+  const ladRows=lad.items.slice().sort((a,b)=> (a.mat||'')<(b.mat||'')?-1:1).map(it=>`<tr><td>${it.name} <span class="tag">${it.type}</span></td><td>${it.account}</td><td>${it.mat}</td><td>${fmt(it.principalU)}</td></tr>`).join('')
+    || '<tr><td colspan="4" class="muted">—</td></tr>';
+  const yr=new Date(today()).getUTCFullYear();
+  const near=lad.byYear.filter(y=>+y.year<=yr+2).reduce((s,y)=>s+y.total,0);
+  return `<div class="kpis">
+    <div class="kpi"><div class="lbl">Projected income · 12 mo</div><div class="val pos">${fmt(total12)}</div><div class="sub2">coupons + notes + dividends</div></div>
+    <div class="kpi"><div class="lbl">Next payment</div><div class="val" style="font-size:15px">${inc[0]?fmt(inc[0].amountU):'—'}</div><div class="sub2">${inc[0]?inc[0].instrument+' · '+inc[0].date:'none scheduled'}</div></div>
+    <div class="kpi"><div class="lbl">Principal maturing ≤ ${yr+2}</div><div class="val">${fmt(near)}</div><div class="sub2">bonds + notes redeeming</div></div>
+    <div class="kpi"><div class="lbl">Payments scheduled</div><div class="val">${inc.length}</div><div class="sub2">next 12 months</div></div>
+  </div>
+  <div class="grid2">
+    <div class="card"><h3>Income calendar <span class="hint">expected cash in, next 12 months, ${state.ccy}</span></h3>${bars}
+      <div class="note">Coupons projected from each instrument's next-coupon date & frequency to maturity; equity dividends from the declared per-share rate.</div></div>
+    <div class="card"><h3>Maturity ladder <span class="hint">principal returning by year, ${state.ccy}</span></h3>${ladBars}
+      <div class="note">When bonds & structured notes redeem — plan reinvestment around these.</div></div>
+  </div>
+  <div class="grid2">
+    <div class="card"><h3>Upcoming payments <span class="hint">next 16</span></h3>${tableFor(['Date','Instrument','Type','Amount'],upcoming.split('</tr>').filter(Boolean).map(r=>r+'</tr>'))}</div>
+    <div class="card"><h3>Maturities</h3>${tableFor(['Instrument','Account','Maturity','Principal'],ladRows.split('</tr>').filter(Boolean).map(r=>r+'</tr>'))}</div>
+  </div>`;
+}
+
+/* ---------------- Risk (metrics, concentration, exposures, derivatives) ---------------- */
+function expoBars(groups, nw, palette){
+  const max=Math.max(...groups.map(x=>Math.abs(x.v)),1);
+  return groups.map((x,i)=>`<div class="barrow" style="grid-template-columns:150px 1fr 108px">
+    <span>${x.k}</span><div class="bartrack"><div class="barfill" style="width:${Math.abs(x.v)/max*100}%;background:var(${palette[i%palette.length]})"></div></div>
+    <span style="text-align:right">${fmt(x.v)} · ${((x.v/nw)*100).toFixed(0)}%</span></div>`).join('');
+}
+function viewRisk(m){
+  const r=riskMetrics(), con=concentration(), g=portfolioGreeks();
+  const nw=m.net||1;
+  const fx=exposureBy('ccy'), sec=exposureBy('sector'), ctry=exposureBy('country');
+  const h=holdings();
+  const grossLong=h.filter(x=>x.expU>0).reduce((s,x)=>s+x.expU,0);
+  const grossShort=h.filter(x=>x.expU<0).reduce((s,x)=>s+x.expU,0);
+  const grossExp=grossLong-grossShort, netExp=grossLong+grossShort;
+  const PAL=['--s1','--s2','--s3','--s4','--s5','--s6','--s7','--s8'];
+  const conRows=con.rows.slice(0,10).map(x=>`<tr><td>${x.name} <span class="tag">${x.cls}</span> <span class="tag">${x.account}</span></td>
+    <td>${fmt(x.mvU)}</td><td>${(x.w*100).toFixed(1)}%</td></tr>`).join('');
+  const grk=g.rows.map(o=>`<tr><td>${o.id} <span class="tag">${o.account}</span></td><td>${o.g.delta.toFixed(2)}</td>
+    <td>${fmtNum(o.deltaSh,0)}</td><td>${fmt(o.deltaUSD)}</td><td>${fmt(o.thetaUSD)}</td><td>${fmt(o.vegaUSD)}</td></tr>`).join('')
+    || '<tr><td colspan="6" class="muted">No option positions in this slice.</td></tr>';
+  const rf2=v=>isFinite(v)?v.toFixed(2):'∞';
+  const smoothNote = r.smooth ? `<div class="note" style="margin-bottom:14px">Risk metrics use the net-worth snapshot history, which in this template is a smooth synthetic series — so volatility looks low and drawdown is zero. They become meaningful once the connector logs real (noisier) snapshots over time.</div>` : '';
+  return `${smoothNote}<div class="kpis">
+    <div class="kpi"><div class="lbl">Volatility (ann.)</div><div class="val">${(r.volAnn*100).toFixed(1)}%</div><div class="sub2">of net worth</div></div>
+    <div class="kpi"><div class="lbl">Max drawdown</div><div class="val neg">${(r.maxDD*100).toFixed(1)}%</div></div>
+    <div class="kpi"><div class="lbl">Sharpe / Sortino</div><div class="val">${rf2(r.sharpe)} / ${rf2(r.sortino)}</div><div class="sub2">vs ${(RF()*100).toFixed(1)}% risk-free</div></div>
+    <div class="kpi"><div class="lbl">Gross exposure</div><div class="val">${(grossExp/nw*100).toFixed(0)}%</div><div class="sub2">of net worth · net ${(netExp/nw*100).toFixed(0)}%</div></div>
+  </div>
+  <div class="grid2">
+    <div class="card"><h3>Concentration <span class="hint">largest positions, share of holdings</span></h3>
+      ${tableFor(['Position','Market value','Weight'],conRows.split('</tr>').filter(Boolean).map(r=>r+'</tr>'))}
+      <div class="note">Top holding ${(con.top1*100).toFixed(0)}% · Top 5 ${(con.top5*100).toFixed(0)}% · HHI ${(con.hhi*10000).toFixed(0)} · effective # of positions ≈ ${con.effN.toFixed(1)}.</div></div>
+    <div class="card"><h3>Currency exposure <span class="hint">economic exposure by currency, % of net worth</span></h3>
+      ${expoBars(fx,nw,PAL)}
+      <div class="note">Note: a USD-denominated Argentine bond counts as USD exposure, not ARS — this is real currency risk, not just where it trades.</div></div>
+  </div>
+  <div class="grid2">
+    <div class="card"><h3>Sector exposure <span class="hint">% of net worth</span></h3>${expoBars(sec,nw,PAL)}</div>
+    <div class="card"><h3>Country exposure <span class="hint">% of net worth</span></h3>${expoBars(ctry,nw,PAL)}</div>
+  </div>
+  <div class="grid2">
+    <div class="card"><h3>Options — portfolio Greeks <span class="hint">Black-Scholes, aggregated</span></h3>
+      <div class="kpis" style="grid-template-columns:repeat(4,1fr);margin-bottom:12px">
+        <div class="kpi"><div class="lbl">Delta ($)</div><div class="val" style="font-size:18px">${fmt(g.deltaUSD)}</div><div class="sub2">≈ ${fmtNum(g.deltaUSD/nw*100,1)}% NW</div></div>
+        <div class="kpi"><div class="lbl">Theta ($/day)</div><div class="val ${cls(g.thetaUSD)}" style="font-size:18px">${fmt(g.thetaUSD)}</div></div>
+        <div class="kpi"><div class="lbl">Vega ($/vol)</div><div class="val" style="font-size:18px">${fmt(g.vegaUSD)}</div></div>
+        <div class="kpi"><div class="lbl">Gamma ($)</div><div class="val" style="font-size:18px">${fmt(g.gammaUSD)}</div></div>
+      </div>
+      ${tableFor(['Option','Delta','Δ shares','Δ $','Theta/day','Vega'],grk.split('</tr>').filter(Boolean).map(r=>r+'</tr>'))}
+      <div class="note">Delta $ = directional exposure (like holding that many $ of the underlying). Theta = daily time decay. Uses each option's spot & implied-vol inputs.</div></div>
+    <div class="card"><h3>Exposure & leverage</h3>
+      <div class="barrow" style="grid-template-columns:1fr auto"><span class="muted">Gross long exposure</span><b>${fmt(grossLong)}</b></div>
+      <div class="barrow" style="grid-template-columns:1fr auto"><span class="muted">Gross short exposure</span><b>${fmt(grossShort)}</b></div>
+      <div class="barrow" style="grid-template-columns:1fr auto"><span class="muted">Net exposure</span><b>${fmt(netExp)} · ${(netExp/nw*100).toFixed(0)}% NW</b></div>
+      <div class="barrow" style="grid-template-columns:1fr auto"><span class="muted">Gross exposure / net worth</span><b>${(grossExp/nw).toFixed(2)}×</b></div>
+      <div class="barrow" style="grid-template-columns:1fr auto"><span class="muted">Loans (leverage)</span><b class="neg">${fmt(-m.liab)}</b></div>
+      <div class="note">Gross exposure includes delta-adjusted options and futures notional. >1.0× means you control more market exposure than your net worth — leverage from derivatives and the margin loan.</div></div>
+  </div>`;
+}
+
+function render(){
+  const m=buildModel();
+  document.getElementById('asof').textContent =
+    `As of ${today().toISOString().slice(0,10)} · ${state.ccy} · ARS: ${state.arsRate.toUpperCase()} (${fmtNum(state.fx.ars_rates[state.arsRate])}/USD) · account: ${state.account==='ALL'?'All':ACCT_NAME(state.account)}`;
+  renderTabs();
+  let html='';
+  if(activeTab==='master') html=viewMaster(m);
+  else if(activeTab==='accounts') html=viewAccounts(m);
+  else if(activeTab==='analysis') html=viewAnalysis(m);
+  else if(activeTab==='pnl') html=viewPnL(m);
+  else if(activeTab==='income') html=viewIncome(m);
+  else if(activeTab==='risk') html=viewRisk(m);
+  else if(activeTab==='operations') html=viewOperations(m);
+  else if(activeTab==='eqGlobal') html=viewEquities(m.eg,'Global Equities');
+  else if(activeTab==='eqArg') html=viewEquities(m.ea,'Argentine Equities (ARS)');
+  else if(activeTab==='bondsIntl') html=viewBonds(m.bi,'International Bonds','US Treasuries & corporates');
+  else if(activeTab==='bondsArg') html=viewBonds(m.ba,'Argentine Bonds','hard-dollar (GD30/AL30) & CER/ARS');
+  else if(activeTab==='funds') html=viewFunds(m.fn);
+  else if(activeTab==='structured') html=viewStructured(m.st);
+  else if(activeTab==='options') html=viewOptions(m.op);
+  else if(activeTab==='futures') html=viewFutures(m.fu);
+  else if(activeTab==='loans') html=viewLoans(m.ln);
+  else if(activeTab==='cash') html=viewCash(m.ch);
+  else if(activeTab==='ledger') html=viewLedger();
+  document.getElementById('views').innerHTML=`<div class="view active">${html}</div>`;
+  if(activeTab==='analysis') computeRange();
+  renderFxBar();
+}
+
+function renderFxBar(){
+  const f=state.fx, ars=f.ars_rates;
+  const color = state.fxSource==='live' ? 'var(--good)' : 'var(--muted)';
+  document.getElementById('fxbar').innerHTML=
+    `<span><span class="dot" style="background:${color}"></span><b>FX ${state.fxSource==='live'?'LIVE':'seed'}</b> · ${state.fxDate}</span>`+
+    `<span>EUR/USD <b>${f.EUR_per_USD.toFixed(4)}</b></span>`+
+    `<span>Oficial <b>${fmtNum(ars.oficial)}</b></span>`+
+    `<span>MEP <b>${fmtNum(ars.mep)}</b></span>`+
+    `<span>CCL <b>${fmtNum(ars.ccl)}</b></span>`+
+    `<span>Blue <b>${fmtNum(ars.blue)}</b></span>`+
+    `<span class="muted">ARS/USD in use: <b>${fmtNum(ars[state.arsRate])}</b></span>`;
+}
+
+/* ---------------- live FX ---------------- */
+async function refreshFX(){
+  const btn=document.getElementById('refreshBtn'); btn.textContent='↻ …'; btn.disabled=true;
+  let ok=false;
+  try{
+    const r=await fetch('https://dolarapi.com/v1/dolares',{cache:'no-store'});
+    if(r.ok){
+      const arr=await r.json();
+      const map={oficial:'oficial',blue:'blue',bolsa:'mep',contadoconliqui:'ccl',mayorista:'mayorista'};
+      arr.forEach(d=>{ if(map[d.casa] && d.venta) state.fx.ars_rates[map[d.casa]]=d.venta; });
+      ok=true;
+    }
+  }catch(e){}
+  try{
+    const r2=await fetch('https://api.frankfurter.dev/v1/latest?base=USD&symbols=EUR,GBP',{cache:'no-store'});
+    if(r2.ok){ const j=await r2.json(); if(j.rates){ if(j.rates.EUR) state.fx.EUR_per_USD=j.rates.EUR; if(j.rates.GBP) state.fx.GBP_per_USD=j.rates.GBP; state.fxDate=j.date+' (live)'; } ok=true; }
+  }catch(e){}
+  state.fxSource = ok?'live':'seed';
+  if(ok && !state.fxDate.includes('live')) state.fxDate=today().toISOString().slice(0,10)+' (live)';
+  btn.textContent='↻ Refresh live FX'; btn.disabled=false;
+  render();
+}
+
+/* ---------------- events ---------------- */
+document.getElementById('ccySeg').addEventListener('click',e=>{
+  if(e.target.dataset.ccy){ state.ccy=e.target.dataset.ccy;
+    document.querySelectorAll('#ccySeg button').forEach(b=>b.classList.toggle('active',b.dataset.ccy===state.ccy));
+    render(); }
+});
+document.getElementById('arsSel').value=state.arsRate;
+document.getElementById('arsSel').addEventListener('change',e=>{state.arsRate=e.target.value;render();});
+// populate account filter
+(function(){
+  const sel=document.getElementById('acctSel');
+  sel.innerHTML='<option value="ALL">All accounts</option>'+
+    (DATA.accounts||[]).map(a=>`<option value="${a.id}">${a.name}</option>`).join('');
+  sel.value=state.account;
+  sel.addEventListener('change',e=>{state.account=e.target.value;render();});
+})();
+document.getElementById('refreshBtn').addEventListener('click',refreshFX);
+document.getElementById('themeBtn').addEventListener('click',()=>{
+  const h=document.documentElement; h.dataset.theme = h.dataset.theme==='dark'?'light':'dark'; render();
+});
+if(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
+  document.documentElement.dataset.theme='dark';
+
+document.getElementById('footnote').innerHTML=
+  'Live FX pulls from dolarapi.com (ARS: oficial/MEP/CCL/blue/mayorista) and frankfurter.dev (EUR/GBP) directly in your browser — no key needed. '+
+  'If a fetch is blocked, the dashboard falls back to the seeded rates shown. Instrument prices (equities, bonds, options, futures) are the template inputs — '+
+  'edit them in the Excel workbook, which is the data engine this view mirrors. This is sample data for you to replace with your real positions.';
+
+render();
+// attempt a live refresh on load (non-blocking)
+refreshFX();
+</script>
+
+<script>
+const __PAYLOAD = {"v": 1, "iters": 200000, "salt": "fW/ZV2YLyy9eLJb14nn0RA==", "iv": "fXblhn1cXIu7+LCz", "ct": "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"};
+const __b = b => Uint8Array.from(atob(b), c => c.charCodeAt(0));
+async function __unlock(e){
+  e.preventDefault();
+  const err = document.getElementById('__err'); err.textContent = 'Decrypting…';
+  try{
+    const pw = document.getElementById('__pw').value;
+    const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(pw), 'PBKDF2', false, ['deriveKey']);
+    const key = await crypto.subtle.deriveKey(
+      {name:'PBKDF2', salt:__b(__PAYLOAD.salt), iterations:__PAYLOAD.iters, hash:'SHA-256'},
+      base, {name:'AES-GCM', length:256}, false, ['decrypt']);
+    const pt = await crypto.subtle.decrypt({name:'AES-GCM', iv:__b(__PAYLOAD.iv)}, key, __b(__PAYLOAD.ct));
+    window.__DATA = JSON.parse(new TextDecoder().decode(pt));
+    const s = document.createElement('script'); s.textContent = document.getElementById('__appcode').textContent;
+    document.body.appendChild(s);
+    const lock = document.getElementById('__lock'); if(lock) lock.remove();
+  }catch(_){ err.textContent = 'Wrong passphrase — try again.'; }
+  return false;
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,1569 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Investment Master Dashboard</title>
+<style>
+  :root{
+    --page:#f9f9f7; --surface:#fcfcfb; --surface-2:#f3f3f0;
+    --ink:#0b0b0b; --ink-2:#52514e; --muted:#898781;
+    --grid:#e1e0d9; --axis:#c3c2b7; --border:rgba(11,11,11,0.10);
+    --good:#006300; --bad:#c0392b;
+    --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100;
+    --s5:#e87ba4; --s6:#008300; --s7:#4a3aa7; --s8:#e34948; --s9:#8a5a2b;
+    --accent:#1F2A44;
+    color-scheme:light;
+  }
+  html[data-theme="dark"]{
+    --page:#0d0d0d; --surface:#1a1a19; --surface-2:#232322;
+    --ink:#ffffff; --ink-2:#c3c2b7; --muted:#898781;
+    --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,0.10);
+    --good:#0ca30c; --bad:#e66767;
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500;
+    --s5:#d55181; --s6:#008300; --s7:#9085e9; --s8:#e66767; --s9:#b98a4e;
+    --accent:#c9d4ea;
+    color-scheme:dark;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--page);color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",sans-serif;font-size:14px;line-height:1.45}
+  a{color:var(--s1)}
+  .wrap{max-width:1280px;margin:0 auto;padding:18px 20px 60px}
+  header.top{display:flex;flex-wrap:wrap;align-items:center;gap:14px;justify-content:space-between;margin-bottom:6px}
+  h1{font-size:20px;margin:0;letter-spacing:.2px}
+  .sub{color:var(--muted);font-size:12px;margin-top:2px}
+  .controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+  .seg{display:inline-flex;background:var(--surface-2);border:1px solid var(--border);border-radius:9px;overflow:hidden}
+  .seg button{border:0;background:transparent;color:var(--ink-2);padding:6px 12px;font-size:13px;cursor:pointer;font-weight:600}
+  .seg button.active{background:var(--s1);color:#fff}
+  select,.btn{background:var(--surface-2);border:1px solid var(--border);color:var(--ink);border-radius:9px;padding:6px 10px;font-size:13px;cursor:pointer}
+  .btn:hover{border-color:var(--s1)}
+  .fxbar{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;background:var(--surface);border:1px solid var(--border);
+    border-radius:12px;padding:8px 14px;margin:10px 0 16px;font-size:12.5px}
+  .fxbar b{font-variant-numeric:tabular-nums}
+  .dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:5px;vertical-align:middle}
+  nav.tabs{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:16px;border-bottom:1px solid var(--border)}
+  nav.tabs button{border:0;background:transparent;color:var(--ink-2);padding:9px 13px;font-size:13.5px;cursor:pointer;
+    border-bottom:2px solid transparent;font-weight:600}
+  nav.tabs button.active{color:var(--ink);border-bottom-color:var(--s1)}
+  .view{display:none}
+  .view.active{display:block}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:18px}
+  .kpi{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px}
+  .kpi .lbl{color:var(--muted);font-size:11.5px;text-transform:uppercase;letter-spacing:.4px}
+  .kpi .val{font-size:24px;font-weight:700;margin-top:6px;font-variant-numeric:tabular-nums}
+  .kpi .sub2{font-size:12px;color:var(--ink-2);margin-top:3px;font-variant-numeric:tabular-nums}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px}
+  @media(max-width:900px){.grid2{grid-template-columns:1fr}}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px}
+  .card h3{margin:0 0 12px;font-size:14px;font-weight:700}
+  .card h3 .hint{font-weight:400;color:var(--muted);font-size:11.5px;margin-left:6px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:right;padding:7px 9px;border-bottom:1px solid var(--grid);font-variant-numeric:tabular-nums;white-space:nowrap}
+  th:first-child,td:first-child{text-align:left;font-variant-numeric:normal}
+  th{color:var(--muted);font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.3px;cursor:default}
+  tbody tr:hover{background:var(--surface-2)}
+  tfoot td{font-weight:700;border-top:2px solid var(--axis);border-bottom:0}
+  .pos{color:var(--good)} .neg{color:var(--bad)}
+  .tblwrap{overflow-x:auto}
+  .legend{display:flex;flex-wrap:wrap;gap:10px 16px;margin-top:12px;font-size:12px}
+  .legend span{display:inline-flex;align-items:center;gap:6px;color:var(--ink-2)}
+  .legend i{width:11px;height:11px;border-radius:3px;display:inline-block}
+  .muted{color:var(--muted)}
+  .pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;background:var(--surface-2);border:1px solid var(--border)}
+  .barrow{display:grid;grid-template-columns:130px 1fr 90px;align-items:center;gap:10px;margin:7px 0;font-size:12.5px}
+  .bartrack{background:var(--surface-2);border-radius:5px;height:16px;overflow:hidden}
+  .barfill{height:100%;border-radius:5px}
+  .coupon{display:grid;grid-template-columns:1fr auto auto;gap:8px;padding:6px 0;border-bottom:1px solid var(--grid);font-size:12.5px}
+  .note{font-size:11.5px;color:var(--muted);margin-top:10px;line-height:1.5}
+  .tag{font-size:10.5px;color:var(--muted);border:1px solid var(--border);border-radius:5px;padding:1px 5px;margin-left:6px}
+  .isin{font-size:10.5px;color:var(--muted);font-variant-numeric:tabular-nums;letter-spacing:.3px}
+  .ops{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;align-items:end}
+  .ops label{display:block;font-size:11.5px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.3px}
+  .ops input,.ops select{width:100%;background:var(--surface-2);border:1px solid var(--border);color:var(--ink);border-radius:8px;padding:7px 9px;font-size:13px}
+  .btn.primary{background:var(--s1);color:#fff;border-color:var(--s1);font-weight:600}
+  .btn.ghost{background:transparent}
+  .row-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .chipbtn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);background:var(--surface-2);color:var(--ink-2);
+    border-radius:999px;padding:4px 10px;font-size:12px;cursor:pointer;opacity:.5}
+  .chipbtn.on{opacity:1;color:var(--ink);border-color:var(--s1)}
+  .chipbtn i{width:10px;height:10px;border-radius:3px;display:inline-block}
+  svg text{fill:var(--ink-2)}
+  .center{display:flex;align-items:center;justify-content:center;gap:18px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Investment Master Dashboard</h1>
+      <div class="sub" id="asof"></div>
+    </div>
+    <div class="controls">
+      <div class="seg" id="ccySeg">
+        <button data-ccy="USD" class="active">USD</button>
+        <button data-ccy="EUR">EUR</button>
+        <button data-ccy="ARS">ARS</button>
+      </div>
+      <select id="acctSel" title="Filter all views by bank / broker account"></select>
+      <select id="arsSel" title="Which ARS/USD rate to use for conversions">
+        <option value="oficial">ARS: Oficial</option>
+        <option value="mayorista">ARS: Mayorista</option>
+        <option value="mep" selected>ARS: MEP</option>
+        <option value="ccl">ARS: CCL</option>
+        <option value="blue">ARS: Blue</option>
+      </select>
+      <button class="btn" id="refreshBtn">↻ Refresh live FX</button>
+      <button class="btn" id="themeBtn" title="Toggle light/dark">◑</button>
+    </div>
+  </header>
+
+  <div class="fxbar" id="fxbar"></div>
+
+  <nav class="tabs" id="tabs"></nav>
+
+  <div id="views"></div>
+
+  <div class="note" id="footnote"></div>
+</div>
+
+<script>
+let DATA = __DATA__;
+const ORIGINAL_DATA = JSON.parse(JSON.stringify(DATA));
+
+/* ---------------- state ---------------- */
+const state = {
+  ccy: 'USD',
+  account: 'ALL',
+  arsRate: DATA.fx.ars_rate_selected || 'mep',
+  fx: JSON.parse(JSON.stringify(DATA.fx)),
+  fxSource: 'seed',
+  fxDate: DATA.meta.notes.includes('2026-07-29') ? '2026-07-29 (seed)' : 'seed'
+};
+
+const CCY_SYM = {USD:'$', EUR:'€', ARS:'$'};
+const CLASS_COLORS = {
+  'Global Equities':'--s1','Argentine Equities':'--s2','Funds':'--s9','International Bonds':'--s3',
+  'Argentine Bonds':'--s4','Structured Products':'--s5','Options':'--s6',
+  'Futures':'--s7','Cash':'--s8'
+};
+
+/* ---------------- fx helpers ---------------- */
+function perUSD(ccy){
+  if(ccy==='USD') return 1;
+  if(ccy==='EUR') return state.fx.EUR_per_USD;
+  if(ccy==='GBP') return state.fx.GBP_per_USD;
+  if(ccy==='ARS') return state.fx.ars_rates[state.arsRate];
+  return 1;
+}
+const toUSD = (amt,ccy)=> amt / perUSD(ccy);
+const fromUSD = (usd,ccy)=> usd * perUSD(ccy);
+function disp(usd){ return fromUSD(usd, state.ccy); }
+/* convert a USD amount into the display currency using a SPECIFIC fx snapshot
+   (so historical values use the rate that applied on their own date) */
+function perUSDat(fxObj,ccy){
+  if(ccy==='USD') return 1;
+  if(ccy==='EUR') return fxObj.EUR_per_USD;
+  if(ccy==='ARS') return (fxObj.ars_rates||{})[state.arsRate];
+  return 1;
+}
+function dispAt(usd,fxObj){ return usd * perUSDat(fxObj, state.ccy); }
+function fmt(usd, dec){
+  const v = disp(usd);
+  const d = dec===undefined ? (state.ccy==='ARS'?0:2) : dec;
+  const s = v<0?'-':'';
+  return s + CCY_SYM[state.ccy] + Math.abs(v).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
+}
+function fmtNum(v,d){d=d||0;return v.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});}
+function pct(x){return (x*100).toFixed(1)+'%';}
+
+/* ---------------- dates / accrual ---------------- */
+const MS_DAY = 86400000;
+function today(){ const d=new Date(); return new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate())); }
+function pdate(s){ const [y,m,d]=s.split('-').map(Number); return new Date(Date.UTC(y,m-1,d)); }
+function daysBetween(a,b){ return Math.round((b-a)/MS_DAY); }
+function daysSince(s){ return daysBetween(pdate(s), today()); }
+function daysUntil(s){ return daysBetween(today(), pdate(s)); }
+
+/* ---------------- computed models ---------------- */
+function equities(list){
+  let rows=list.map(p=>{
+    const mvC=p.qty*p.price, costC=p.qty*p.avg_cost;
+    const mvU=toUSD(mvC,p.ccy), costU=toUSD(costC,p.ccy);
+    const soy=p.price_soy||p.price;
+    return {...p, mvC, mvU, pnlU:mvU-costU, pnlPct: costU? (mvU-costU)/costU:0,
+      ytd: soy? (p.price-soy)/soy : 0};
+  });
+  const tot=rows.reduce((s,r)=>s+r.mvU,0);
+  rows.forEach(r=>r.w= tot? r.mvU/tot:0);
+  return {rows, tot, pnl:rows.reduce((s,r)=>s+r.pnlU,0)};
+}
+/* Yield-to-maturity (bisection) + Macaulay/modified duration, even-period approximation */
+function bondAnalytics(b){
+  const price=b.face*b.price_pct/100;
+  const f=b.freq_per_yr, cpn=b.face*(b.coupon_pct/100)/f;
+  const yrs=Math.max(daysUntil(b.maturity),1)/365.25;
+  const n=Math.max(1,Math.round(yrs*f));
+  const pv=(y)=>{ let s=0; const per=y/f; for(let k=1;k<=n;k++) s+=cpn/Math.pow(1+per,k); s+=b.face/Math.pow(1+per,n); return s; };
+  let lo=-0.95, hi=3.0, y=0.05;
+  if(pv(lo)<price){ y=lo; } else if(pv(hi)>price){ y=hi; }
+  else { for(let i=0;i<80;i++){ y=(lo+hi)/2; (pv(y)>price)? lo=y : hi=y; } }
+  const per=y/f; let mac=0; for(let k=1;k<=n;k++) mac+=(k/f)*(cpn/Math.pow(1+per,k)); mac+=(n/f)*(b.face/Math.pow(1+per,n));
+  mac=price? mac/price:0; const mod=mac/(1+per);
+  return {ytm:y, dur:mac, mdur:mod};
+}
+function bonds(list){
+  let rows=list.map(b=>{
+    const cleanC=b.face*b.price_pct/100;
+    const accC=b.face*(b.coupon_pct/100)*daysSince(b.last_coupon)/365;
+    const cost=b.cost_pct!=null?b.cost_pct:b.price_pct;
+    const pnlU=toUSD(b.face*(b.price_pct-cost)/100, b.ccy);
+    const soy=b.price_pct_soy||b.price_pct;
+    const an=bondAnalytics(b);
+    return {...b, cleanC, accC, dirtyU:toUSD(cleanC+accC,b.ccy), accU:toUSD(accC,b.ccy),
+      cleanU:toUSD(cleanC,b.ccy), costU:toUSD(b.face*cost/100,b.ccy), pnlU,
+      dToNext:daysUntil(b.next_coupon),
+      nextAmtU:toUSD(b.face*(b.coupon_pct/100)/b.freq_per_yr,b.ccy),
+      ytm:an.ytm, dur:an.dur, mdur:an.mdur, ytd: soy? (b.price_pct-soy)/soy : 0};
+  });
+  const tot=rows.reduce((s,r)=>s+r.dirtyU,0);
+  const wmdur=tot? rows.reduce((s,r)=>s+r.mdur*r.dirtyU,0)/tot : 0;
+  return {rows, tot, acc:rows.reduce((s,r)=>s+r.accU,0), pnl:rows.reduce((s,r)=>s+r.pnlU,0), wmdur};
+}
+function fundsModel(list){
+  let rows=list.map(p=>{ const mvC=p.units*p.nav, costC=p.units*(p.cost_nav!=null?p.cost_nav:p.nav);
+    const mvU=toUSD(mvC,p.ccy), costU=toUSD(costC,p.ccy); const soy=p.nav_soy||p.nav;
+    return {...p, mvU, pnlU:mvU-costU, pnlPct: costU?(mvU-costU)/costU:0, ytd: soy?(p.nav-soy)/soy:0};});
+  const tot=rows.reduce((s,r)=>s+r.mvU,0); rows.forEach(r=>r.w= tot? r.mvU/tot:0);
+  return {rows, tot, pnl:rows.reduce((s,r)=>s+r.pnlU,0)};
+}
+function structured(list){
+  let rows=list.map(s=>{
+    const accC=s.notional*(s.accrual_pct/100)*daysSince(s.last_coupon)/365;
+    const mark=s.mark_pct!=null?s.mark_pct:100, cost=s.cost_pct!=null?s.cost_pct:100;
+    const markC=s.notional*mark/100;
+    const pnlU=toUSD(s.notional*(mark-cost)/100, s.ccy);
+    return {...s, accC, valU:toUSD(markC+accC,s.ccy), accU:toUSD(accC,s.ccy), pnlU, mark,
+      dToNext:daysUntil(s.next_coupon), nextAmtU:toUSD(s.notional*(s.accrual_pct/100)/s.freq_per_yr,s.ccy)};
+  });
+  return {rows, tot:rows.reduce((s,r)=>s+r.valU,0), acc:rows.reduce((s,r)=>s+r.accU,0), pnl:rows.reduce((s,r)=>s+r.pnlU,0)};
+}
+function options(list){
+  let rows=list.map(o=>{
+    const pnlU=(o.price-o.entry_premium)*o.contracts*o.multiplier/perUSD(o.ccy);
+    const premU=Math.abs(o.entry_premium*o.contracts*o.multiplier)/perUSD(o.ccy);   // premium paid/received
+    return {...o, mvU:o.contracts*o.multiplier*o.price/perUSD(o.ccy), pnlU,
+      pnlPct: premU? pnlU/premU : 0, dToExp:daysUntil(o.expiry)};
+  });
+  return {rows, tot:rows.reduce((s,r)=>s+r.mvU,0), pnl:rows.reduce((s,r)=>s+r.pnlU,0)};
+}
+function futures(list){
+  let rows=list.map(f=>({...f,
+    notU:f.qty*f.price*f.multiplier/perUSD(f.ccy),
+    pnlU:(f.price-f.entry_price)*f.qty*f.multiplier/perUSD(f.ccy),
+    marginU:f.margin/perUSD(f.ccy)}));
+  return {rows, tot:rows.reduce((s,r)=>s+r.pnlU,0), margin:rows.reduce((s,r)=>s+r.marginU,0),
+    notional:rows.reduce((s,r)=>s+r.notU,0)};
+}
+function loans(list){
+  let rows=list.map(l=>{
+    const accC=l.principal*(l.rate_pct/100)*daysSince(l.start_date)/365;
+    return {...l, accC, owedC:l.principal+accC, owedU:toUSD(l.principal+accC,l.ccy)};
+  });
+  return {rows, tot:rows.reduce((s,r)=>s+r.owedU,0)};
+}
+function acctOK(x){ return state.account==='ALL' || x.account===state.account; }
+function ledgerFiltered(){ return DATA.ledger.filter(acctOK); }
+function cash(){
+  const ccys=['USD','EUR','ARS'];
+  const led=ledgerFiltered();
+  const rows=ccys.map(cc=>{
+    const bal=led.filter(t=>t.ccy===cc).reduce((s,t)=>s+t.cash_flow,0);
+    return {ccy:cc, bal, usd:toUSD(bal,cc)};
+  }).filter(r=>Math.abs(r.bal)>0.0001);
+  return {rows, tot:rows.reduce((s,r)=>s+r.usd,0)};
+}
+function ledgerRows(){
+  const led=[...ledgerFiltered()].sort((a,b)=> a.date<b.date?-1:a.date>b.date?1:0);
+  const run={};  // running balance keyed by account + currency
+  return led.map(t=>{
+    const k=(t.account||'')+'|'+t.ccy;
+    run[k]=(run[k]||0)+t.cash_flow;
+    return {...t, usd:toUSD(t.cash_flow,t.ccy), running:run[k]};
+  });
+}
+
+/* Realized P&L from the ledger — average-cost method, per instrument.
+   Buys add to cost pool; sells realize (proceeds − avg cost × qty sold).
+   Options/futures excluded (their P&L is marked-to-market, shown as unrealized). */
+function realizedPnL(){
+  const led=[...ledgerFiltered()].sort((a,b)=> a.date<b.date?-1:a.date>b.date?1:0);
+  const pool={}; // instrument -> {qty, cost} in native ccy
+  const events=[];
+  const EXCL=new Set(['Options','Futures']);
+  led.forEach(t=>{
+    if(t.qty==null) return;
+    const k=(t.account||'')+'|'+t.instrument;
+    if(!pool[k]) pool[k]={qty:0,cost:0,ccy:t.ccy};
+    if(t.type==='Buy'){ pool[k].qty+=t.qty; pool[k].cost+=Math.abs(t.cash_flow); }
+    else if(t.type==='Sell' && !EXCL.has(t.asset_class)){
+      const p=pool[k]; const avg= p.qty>0? p.cost/p.qty : 0;
+      const costOut=avg*t.qty; const proceeds=Math.abs(t.cash_flow);
+      const realC=proceeds-costOut;
+      p.qty-=t.qty; p.cost-=costOut;
+      events.push({date:t.date, instrument:k, cls:t.asset_class, ccy:t.ccy, qty:t.qty,
+        proceeds, cost:costOut, realizedC:realC, realizedU:toUSD(realC,t.ccy)});
+    }
+  });
+  return {events, tot:events.reduce((s,e)=>s+e.realizedU,0)};
+}
+
+function buildModel(){
+  const F=acctOK;
+  const eg=equities(DATA.equities_global.filter(F));
+  const ea=equities(DATA.equities_arg.filter(F));
+  const bi=bonds(DATA.bonds_intl.filter(F));
+  const ba=bonds(DATA.bonds_arg.filter(F));
+  const st=structured(DATA.structured.filter(F));
+  const op=options(DATA.options.filter(F));
+  const fu=futures(DATA.futures.filter(F));
+  const ln=loans(DATA.loans.filter(F));
+  const fn=fundsModel((DATA.funds||[]).filter(F));
+  const ch=cash();
+  const classes=[
+    ['Global Equities',eg.tot],['Argentine Equities',ea.tot],['Funds',fn.tot],['International Bonds',bi.tot],
+    ['Argentine Bonds',ba.tot],['Structured Products',st.tot],['Options',op.tot],
+    ['Futures',fu.tot],['Cash',ch.tot]
+  ];
+  const gross=classes.reduce((s,c)=>s+c[1],0);
+  const liab=ln.tot;
+  const net=gross-liab;
+  const accrued=bi.acc+ba.acc+st.acc;
+  // unrealized P&L across every asset class
+  const unrealByClass=[
+    ['Global Equities',eg.pnl],['Argentine Equities',ea.pnl],['Funds',fn.pnl],['International Bonds',bi.pnl],
+    ['Argentine Bonds',ba.pnl],['Structured Products',st.pnl],['Options',op.pnl],['Futures',fu.tot]
+  ];
+  const unreal=unrealByClass.reduce((s,c)=>s+c[1],0);
+  const rz=realizedPnL();
+  const income=ledgerFiltered().filter(t=>t.type==='Coupon'||t.type==='Dividend').reduce((a,t)=>a+toUSD(t.cash_flow,t.ccy),0);
+  return {eg,ea,bi,ba,st,op,fu,ln,fn,ch,classes,gross,liab,net,accrued,
+    unrealByClass,unreal,realized:rz.tot,realizedEvents:rz.events,income,totalPnl:unreal};
+}
+
+/* ===================== ADVANCED ANALYTICS ===================== */
+const RF=()=>((DATA.config||{}).risk_free_pct||4)/100;
+function fullNetUSD(){ const s=state.account; state.account='ALL'; const n=buildModel().net; state.account=s; return n; }
+
+/* --- Black-Scholes Greeks --- */
+function normPdf(x){ return 0.3989422804014327*Math.exp(-x*x/2); }
+function normCdf(x){ const t=1/(1+0.2316419*Math.abs(x)); const d=normPdf(x);
+  let p=d*t*(0.319381530+t*(-0.356563782+t*(1.781477937+t*(-1.821255978+t*1.330274429))));
+  return x>0? 1-p : p; }
+function optGreeks(o){
+  const S=o.spot||o.strike, K=o.strike, sig=o.iv||0.25, r=RF();
+  const T=Math.max(daysUntil(o.expiry),0)/365, call=(o.type==='Call');
+  if(T<=0||sig<=0){ const intr=call?Math.max(S-K,0):Math.max(K-S,0); return {delta:call?(S>K?1:0):(S<K?-1:0),gamma:0,vega:0,theta:0,price:intr}; }
+  const d1=(Math.log(S/K)+(r+sig*sig/2)*T)/(sig*Math.sqrt(T)), d2=d1-sig*Math.sqrt(T);
+  const delta=call? normCdf(d1) : normCdf(d1)-1;
+  const gamma=normPdf(d1)/(S*sig*Math.sqrt(T));
+  const vega=S*normPdf(d1)*Math.sqrt(T)/100;                     // per 1 vol point
+  const theta=(-(S*normPdf(d1)*sig)/(2*Math.sqrt(T)) - (call?1:-1)*r*K*Math.exp(-r*T)*normCdf(call?d2:-d2))/365; // per day
+  const price=call? S*normCdf(d1)-K*Math.exp(-r*T)*normCdf(d2) : K*Math.exp(-r*T)*normCdf(-d2)-S*normCdf(-d1);
+  return {delta,gamma,vega,theta,price};
+}
+function optionsWithGreeks(){
+  return DATA.options.filter(acctOK).map(o=>{ const g=optGreeks(o); const m=o.contracts*o.multiplier;
+    return {...o, g, deltaSh:g.delta*m, deltaUSD:g.delta*m*(o.spot||o.strike)/perUSD(o.ccy),
+      gammaUSD:g.gamma*m*(o.spot||o.strike)/perUSD(o.ccy), thetaUSD:g.theta*m/perUSD(o.ccy),
+      vegaUSD:g.vega*m/perUSD(o.ccy), mvU:o.contracts*o.multiplier*o.price/perUSD(o.ccy),
+      notionalU:Math.abs(m)*(o.spot||o.strike)/perUSD(o.ccy)}; });
+}
+function portfolioGreeks(){
+  const ows=optionsWithGreeks();
+  return {deltaUSD:ows.reduce((s,o)=>s+o.deltaUSD,0), gammaUSD:ows.reduce((s,o)=>s+o.gammaUSD,0),
+    thetaUSD:ows.reduce((s,o)=>s+o.thetaUSD,0), vegaUSD:ows.reduce((s,o)=>s+o.vegaUSD,0), rows:ows};
+}
+
+/* --- holdings with economic value + exposure (USD) --- */
+function ccyCountry(ccy){ return ccy==='USD'?'United States':ccy==='ARS'?'Argentina':ccy==='EUR'?'Eurozone':ccy; }
+function holdings(){
+  const F=acctOK, h=[];
+  DATA.equities_global.concat(DATA.equities_arg).filter(F).forEach(p=>{const v=toUSD(p.qty*p.price,p.ccy);
+    h.push({name:p.ticker,cls:'Equity',account:p.account,sector:p.sector||'Other',country:p.country||ccyCountry(p.ccy),ccy:p.ccy,mvU:v,expU:v});});
+  (DATA.funds||[]).filter(F).forEach(p=>{const v=toUSD(p.units*p.nav,p.ccy);
+    h.push({name:p.id,cls:'Fund',account:p.account,sector:p.sector||'Fund',country:p.country||ccyCountry(p.ccy),ccy:p.ccy,mvU:v,expU:v});});
+  DATA.bonds_intl.concat(DATA.bonds_arg).filter(F).forEach(b=>{const clean=b.face*b.price_pct/100, acc=b.face*(b.coupon_pct/100)*daysSince(b.last_coupon)/365; const v=toUSD(clean+acc,b.ccy);
+    h.push({name:b.id,cls:'Bond',account:b.account,sector:b.sector||'Government',country:b.country||ccyCountry(b.ccy),ccy:b.ccy,mvU:v,expU:v});});
+  DATA.structured.filter(F).forEach(s=>{const v=toUSD(s.notional*(s.mark_pct||100)/100 + s.notional*(s.accrual_pct/100)*daysSince(s.last_coupon)/365,s.ccy);
+    h.push({name:s.id,cls:'Structured',account:s.account,sector:s.sector||'Structured Credit',country:s.country||'United States',ccy:s.ccy,mvU:v,expU:v});});
+  optionsWithGreeks().forEach(o=>h.push({name:o.id,cls:'Option',account:o.account,sector:'Derivatives',country:o.country||'United States',ccy:o.ccy,mvU:o.mvU,expU:o.deltaUSD}));
+  DATA.futures.filter(F).forEach(f=>{const notU=f.qty*f.price*f.multiplier/perUSD(f.ccy), pnlU=(f.price-f.entry_price)*f.qty*f.multiplier/perUSD(f.ccy);
+    h.push({name:f.id,cls:'Future',account:f.account,sector:'Derivatives',country:f.country||'United States',ccy:f.ccy,mvU:pnlU,expU:notU});});
+  ['USD','EUR','ARS'].forEach(cc=>{const bal=ledgerFiltered().filter(t=>t.ccy===cc).reduce((s,t)=>s+t.cash_flow,0); if(Math.abs(bal)>0.01){const v=toUSD(bal,cc);
+    h.push({name:cc+' Cash',cls:'Cash',account:'—',sector:'Cash',country:ccyCountry(cc),ccy:cc,mvU:v,expU:v});}});
+  DATA.loans.filter(F).forEach(l=>{const v=-toUSD(l.principal+l.principal*(l.rate_pct/100)*daysSince(l.start_date)/365,l.ccy);
+    h.push({name:l.id,cls:'Loan',account:l.account,sector:'Financing',country:ccyCountry(l.ccy),ccy:l.ccy,mvU:v,expU:v});});
+  return h;
+}
+function exposureBy(key){ const h=holdings(); const g={};
+  h.forEach(x=>{ const k=x[key]; g[k]=(g[k]||0)+x.expU; });
+  const tot=Object.values(g).reduce((a,b)=>a+Math.abs(b),0)||1;
+  return Object.entries(g).map(([k,v])=>({k,v,pct:v/Object.values(g).reduce((a,b)=>a+b,0)})).sort((a,b)=>Math.abs(b.v)-Math.abs(a.v));
+}
+function concentration(){
+  const longs=holdings().filter(x=>x.mvU>0 && x.cls!=='Cash');
+  const tot=longs.reduce((s,x)=>s+x.mvU,0)||1;
+  longs.forEach(x=>x.w=x.mvU/tot); longs.sort((a,b)=>b.mvU-a.mvU);
+  const hhi=longs.reduce((s,x)=>s+x.w*x.w,0);   // 0..1
+  return {rows:longs, tot, hhi, top1:longs[0]?longs[0].w:0,
+    top5:longs.slice(0,5).reduce((s,x)=>s+x.w,0), n:longs.length, effN: hhi?1/hhi:0};
+}
+
+/* --- risk metrics from the net-worth snapshot series (respects account filter) --- */
+function riskSeriesUSD(){
+  const acct=state.account; const snaps=[...DATA.snapshots].sort((a,b)=>a.date<b.date?-1:1);
+  const vals=snaps.map(sp=> acct==='ALL'? sp.net_worth_usd : ((sp.by_account||{})[acct]||0));
+  vals.push(acct==='ALL'? fullNetUSD() : (buildModel().net));
+  return vals;
+}
+function riskMetrics(){
+  const snaps=[...DATA.snapshots].sort((a,b)=>a.date<b.date?-1:1);
+  const dates=snaps.map(s=>s.date).concat([today().toISOString().slice(0,10)]);
+  const v=riskSeriesUSD();
+  const rets=[]; for(let i=1;i<v.length;i++) if(v[i-1]) rets.push(v[i]/v[i-1]-1);
+  const n=rets.length||1; const mean=rets.reduce((a,b)=>a+b,0)/n;
+  const sd=Math.sqrt(rets.reduce((a,b)=>a+(b-mean)*(b-mean),0)/Math.max(1,n-1));
+  // periods-per-year from the ACTUAL average spacing of snapshots (not a hardcoded 12)
+  const spanDays=Math.max(1,daysBetween(pdate(dates[0]),pdate(dates[dates.length-1])));
+  const ppy = n>0 ? 365/(spanDays/n) : 12;
+  const rfP = RF()/ppy;                                   // per-period risk-free
+  const volAnn=sd*Math.sqrt(ppy);
+  // annualized Sharpe = (mean periodic excess return / periodic stdev) * sqrt(periods)
+  const sharpe = sd ? ((mean-rfP)/sd)*Math.sqrt(ppy) : Infinity;
+  const dn=rets.filter(x=>x<rfP).map(x=>x-rfP);
+  const ddev=Math.sqrt(dn.reduce((a,b)=>a+b*b,0)/Math.max(1,n));   // downside deviation (periodic)
+  const sortino = ddev ? ((mean-rfP)/ddev)*Math.sqrt(ppy) : Infinity;
+  const totRet = v[0]? v[v.length-1]/v[0]-1 : 0;
+  const cagr=(spanDays>0)? Math.pow(1+totRet,365/spanDays)-1 : 0;
+  let peak=v[0],maxDD=0; v.forEach(x=>{ if(x>peak)peak=x; const dd=peak? (x-peak)/peak:0; if(dd<maxDD)maxDD=dd; });
+  const best=Math.max(...rets), worst=Math.min(...rets);
+  const smooth = (maxDD===0 && rets.filter(x=>x<0).length===0);
+  return {volAnn,cagr,maxDD,sharpe,sortino,best,worst,n,smooth,ppy};
+}
+
+/* --- forward income projection + maturity ladder --- */
+function projectIncome(monthsAhead){
+  const out=[]; const start=today(); const end=new Date(start); end.setUTCMonth(end.getUTCMonth()+monthsAhead);
+  const addStream=(nextStr,matStr,freq,amtCcy,ccy,name,account,typ)=>{
+    if(!nextStr||!freq||!amtCcy) return; let dt=pdate(nextStr); const mat=matStr?pdate(matStr):end;
+    const step=Math.max(1,Math.round(12/freq)); let g=0;
+    while(dt<=end && dt<=mat && g++<80){ if(dt>=start) out.push({date:dt.toISOString().slice(0,10),instrument:name,account,type:typ,amountU:toUSD(amtCcy,ccy),ccy}); const nx=new Date(dt); nx.setUTCMonth(nx.getUTCMonth()+step); dt=nx; }
+  };
+  DATA.bonds_intl.concat(DATA.bonds_arg).filter(acctOK).forEach(b=>addStream(b.next_coupon,b.maturity,b.freq_per_yr,b.face*(b.coupon_pct/100)/b.freq_per_yr,b.ccy,b.id,b.account,'Coupon'));
+  DATA.structured.filter(acctOK).forEach(s=>addStream(s.next_coupon,s.maturity,s.freq_per_yr,s.notional*(s.accrual_pct/100)/s.freq_per_yr,s.ccy,s.id,s.account,'Note coupon'));
+  DATA.equities_global.concat(DATA.equities_arg).filter(acctOK).forEach(p=>{ if(p.annual_div_ps&&p.div_freq&&p.next_div) addStream(p.next_div,null,p.div_freq,p.qty*p.annual_div_ps/p.div_freq,p.ccy,p.ticker,p.account,'Dividend'); });
+  return out.sort((a,b)=>a.date<b.date?-1:1);
+}
+function incomeByMonth(){
+  const evs=projectIncome(12); const m={};
+  evs.forEach(e=>{ const k=e.date.slice(0,7); (m[k]=m[k]||{key:k,total:0,items:[]}); m[k].total+=e.amountU; m[k].items.push(e); });
+  return Object.values(m).sort((a,b)=>a.key<b.key?-1:1);
+}
+function maturityLadder(){
+  const items=DATA.bonds_intl.concat(DATA.bonds_arg).filter(acctOK).map(b=>({name:b.id,year:(b.maturity||'').slice(0,4),principalU:toUSD(b.face,b.ccy),ccy:b.ccy,type:'Bond',account:b.account,mat:b.maturity}))
+    .concat(DATA.structured.filter(acctOK).map(s=>({name:s.id,year:(s.maturity||'').slice(0,4),principalU:toUSD(s.notional,s.ccy),ccy:s.ccy,type:'Note',account:s.account,mat:s.maturity})));
+  const y={}; items.forEach(it=>{ (y[it.year]=y[it.year]||{year:it.year,total:0,items:[]}); y[it.year].total+=it.principalU; y[it.year].items.push(it); });
+  return {byYear:Object.values(y).sort((a,b)=>a.year<b.year?-1:1), items};
+}
+
+/* --- alerts --- */
+function alertsList(){
+  const cfg=(DATA.config||{}).alerts||{coupon_days:21,expiry_days:21,maturity_days:120,move_pct:20};
+  const a=[];
+  projectIncome(3).forEach(e=>{ const dd=daysUntil(e.date); if(dd>=0&&dd<=cfg.coupon_days) a.push({sev:'info',tag:e.type,text:`${fmt(e.amountU)} from <b>${e.instrument}</b> (${e.account}) in ${dd}d · ${e.date}`,d:dd}); });
+  DATA.options.filter(acctOK).forEach(o=>{ const dd=daysUntil(o.expiry); if(dd>=0&&dd<=cfg.expiry_days) a.push({sev:'warn',tag:'Option expiry',text:`<b>${o.id}</b> (${o.account}) expires in ${dd}d · ${o.expiry}`,d:dd}); });
+  DATA.bonds_intl.concat(DATA.bonds_arg).filter(acctOK).forEach(b=>{ const dd=daysUntil(b.maturity); if(dd>=0&&dd<=cfg.maturity_days) a.push({sev:'info',tag:'Maturity',text:`<b>${b.id}</b> matures in ${dd}d · ${fmt(toUSD(b.face,b.ccy))} principal`,d:dd}); });
+  const mv=cfg.move_pct/100;
+  DATA.equities_global.concat(DATA.equities_arg).filter(acctOK).forEach(p=>{ const soy=p.price_soy||p.price; const y=soy?(p.price-soy)/soy:0; if(Math.abs(y)>=mv) a.push({sev:y<0?'crit':'good',tag:'Big move',text:`<b>${p.ticker}</b> (${p.account}) ${(y*100).toFixed(0)}% YTD`,d:0}); });
+  DATA.loans.filter(acctOK).forEach(l=>{ const acc=l.principal*(l.rate_pct/100)*daysSince(l.start_date)/365; if(acc>0) a.push({sev:'warn',tag:'Loan interest',text:`<b>${l.id}</b> accrued ${fmt(toUSD(acc,l.ccy))} (${l.rate_pct}% p.a.)`,d:0}); });
+  const order={crit:0,warn:1,good:2,info:3};
+  return a.sort((x,y)=>(order[x.sev]-order[y.sev])|| (x.d-y.d));
+}
+
+/* ---------------- SVG donut ---------------- */
+function donut(items){ // items:[{label,value,color}]
+  const total=items.reduce((s,i)=>s+Math.max(0,i.value),0)||1;
+  const R=78,r=48,cx=95,cy=95;let a=-Math.PI/2;
+  let paths='';
+  items.forEach(it=>{
+    const v=Math.max(0,it.value), frac=v/total, a2=a+frac*2*Math.PI;
+    if(frac<=0) return;
+    const large=frac>0.5?1:0;
+    const x1=cx+R*Math.cos(a),y1=cy+R*Math.sin(a),x2=cx+R*Math.cos(a2),y2=cy+R*Math.sin(a2);
+    const xi1=cx+r*Math.cos(a2),yi1=cy+r*Math.sin(a2),xi2=cx+r*Math.cos(a),yi2=cy+r*Math.sin(a);
+    paths+=`<path d="M${x1} ${y1} A${R} ${R} 0 ${large} 1 ${x2} ${y2} L${xi1} ${yi1} A${r} ${r} 0 ${large} 0 ${xi2} ${yi2} Z" fill="var(${it.color})" stroke="var(--surface)" stroke-width="2"><title>${it.label}: ${fmt(it.value)} (${pct(frac)})</title></path>`;
+    a=a2;
+  });
+  return `<svg viewBox="0 0 190 190" width="190" height="190" role="img">${paths}</svg>`;
+}
+
+/* ---------------- SVG line chart ---------------- */
+function lineChart(points){ // points:[{date,value}] value ALREADY in display ccy (per-date fx)
+  const W=560,H=200,padL=54,padR=14,padT=14,padB=28;
+  const xs=points.map(p=>pdate(p.date).getTime());
+  const ys=points.map(p=>p.value);
+  const xmin=Math.min(...xs),xmax=Math.max(...xs);
+  const ymin=Math.min(...ys),ymax=Math.max(...ys);
+  const ylo=ymin-(ymax-ymin)*0.12, yhi=ymax+(ymax-ymin)*0.12;
+  const X=t=>padL+(xmax===xmin?0:(t-xmin)/(xmax-xmin))*(W-padL-padR);
+  const Y=v=>padT+(yhi===ylo?0:(1-(v-ylo)/(yhi-ylo)))*(H-padT-padB);
+  let d=''; points.forEach((p,i)=>{d+=(i?'L':'M')+X(xs[i]).toFixed(1)+' '+Y(ys[i]).toFixed(1)+' ';});
+  const area=d+`L${X(xmax).toFixed(1)} ${Y(ylo).toFixed(1)} L${X(xmin).toFixed(1)} ${Y(ylo).toFixed(1)} Z`;
+  const gy=[ylo,(ylo+yhi)/2,yhi].map(v=>`<line x1="${padL}" y1="${Y(v).toFixed(1)}" x2="${W-padR}" y2="${Y(v).toFixed(1)}" stroke="var(--grid)" stroke-width="1"/><text x="${padL-6}" y="${(Y(v)+3).toFixed(1)}" text-anchor="end" font-size="10">${CCY_SYM[state.ccy]}${(v/1000).toFixed(0)}k</text>`).join('');
+  const dots=points.map((p,i)=>`<circle cx="${X(xs[i]).toFixed(1)}" cy="${Y(ys[i]).toFixed(1)}" r="3" fill="var(--s1)"><title>${p.date}: ${CCY_SYM[state.ccy]}${fmtNum(p.value,0)}</title></circle>`).join('');
+  const xlab=[points[0],points[points.length-1]].map(p=>`<text x="${X(pdate(p.date).getTime()).toFixed(1)}" y="${H-8}" text-anchor="middle" font-size="10">${p.date}</text>`).join('');
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" role="img" preserveAspectRatio="xMidYMid meet">
+    ${gy}<path d="${area}" fill="var(--s1)" opacity="0.10"/><path d="${d}" fill="none" stroke="var(--s1)" stroke-width="2"/>${dots}${xlab}</svg>`;
+}
+
+/* ---------------- rendering ---------------- */
+const TABS=[
+  ['master','Master'],['accounts','Accounts'],['analysis','Analysis'],['pnl','P&L'],['income','Income'],['risk','Risk'],['eqGlobal','Global Equities'],['eqArg','ARG Equities'],
+  ['bondsIntl','Intl Bonds'],['bondsArg','ARG Bonds'],['funds','Funds'],['structured','Structured'],
+  ['options','Options'],['futures','Futures'],['loans','Loans'],['cash','Cash'],
+  ['ledger','Ledger'],['operations','Operations']
+];
+const ACCT_NAME=id=>{ const a=(DATA.accounts||[]).find(x=>x.id===id); return a?a.name:id; };
+let activeTab='master';
+
+function chip(color){return `<i style="background:var(${color})"></i>`;}
+function cls(v){return v>=0?'pos':'neg';}
+function sign(usd){return (disp(usd)>=0?'+':'')+fmt(usd);}
+
+function renderTabs(){
+  document.getElementById('tabs').innerHTML=TABS.map(([k,l])=>
+    `<button data-tab="${k}" class="${k===activeTab?'active':''}">${l}</button>`).join('');
+  document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>{activeTab=b.dataset.tab;render();});
+}
+
+function tableFor(headers, rows, footer){
+  return `<div class="tblwrap"><table><thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead>
+    <tbody>${rows.join('')}</tbody>${footer?`<tfoot><tr>${footer}</tr></tfoot>`:''}</table></div>`;
+}
+
+function viewMaster(m){
+  const kpis=[
+    ['Net Worth', fmt(m.net), `Gross ${fmt(m.gross)} − Liab ${fmt(m.liab)}`],
+    ['Gross Assets', fmt(m.gross), `${m.classes.length} asset classes`],
+    ['Liabilities', fmt(m.liab), 'Loans / overdraft + accrued'],
+    ['Cash', fmt(m.ch.tot), 'Across USD / EUR / ARS'],
+    ['Accrued Interest', fmt(m.accrued), 'Bonds + structured, to date'],
+    ['Unrealized P&L', sign(m.totalPnl), 'All open positions — see P&L tab']
+  ];
+  const kpiHtml=kpis.map(k=>`<div class="kpi"><div class="lbl">${k[0]}</div>
+    <div class="val ${k[0]==='Unrealized P&L'?cls(m.totalPnl):(k[0]==='Liabilities'?'neg':'')}">${k[1]}</div>
+    <div class="sub2">${k[2]}</div></div>`).join('');
+
+  const donutItems=m.classes.filter(c=>c[1]>0).map(c=>({label:c[0],value:c[1],color:CLASS_COLORS[c[0]]}));
+  const legend=donutItems.map(i=>`<span>${chip(i.color)} ${i.label} · ${pct(i.value/m.gross)}</span>`).join('');
+
+  const maxAbs=Math.max(...m.classes.map(c=>Math.abs(c[1])),m.liab);
+  const bars=[...m.classes,['Loans (liab.)',-m.liab]].map(c=>{
+    const w=Math.abs(c[1])/maxAbs*100;
+    const col=c[0].startsWith('Loans')?'--bad':CLASS_COLORS[c[0]]||'--s1';
+    return `<div class="barrow"><span>${c[0]}</span>
+      <div class="bartrack"><div class="barfill" style="width:${w}%;background:var(${col})"></div></div>
+      <span style="text-align:right">${fmt(c[1])}</span></div>`;
+  }).join('');
+
+  const allocRows=m.classes.map(c=>`<tr><td>${chip(CLASS_COLORS[c[0]])} ${c[0]}</td>
+    <td>${fmt(c[1])}</td><td>${pct(c[1]/m.gross)}</td></tr>`).join('');
+
+  // upcoming coupons
+  const coupons=[];
+  m.bi.rows.concat(m.ba.rows).forEach(b=>coupons.push({name:b.id,date:b.next_coupon,amt:b.nextAmtU,d:b.dToNext,type:'Bond'}));
+  m.st.rows.forEach(s=>coupons.push({name:s.id,date:s.next_coupon,amt:s.nextAmtU,d:s.dToNext,type:'Note'}));
+  coupons.sort((a,b)=>a.d-b.d);
+  const couponHtml=coupons.map(c=>`<div class="coupon"><span>${c.name} <span class="tag">${c.type}</span></span>
+    <span class="muted">${c.date} · ${c.d}d</span><span style="text-align:right">${fmt(c.amt)}</span></div>`).join('');
+
+  return `
+    <div class="kpis">${kpiHtml}</div>
+    ${alertsCard()}
+    <div class="grid2">
+      <div class="card"><h3>Allocation by asset class <span class="hint">share of gross assets</span></h3>
+        <div class="center"><div>${donut(donutItems)}</div>
+          <div style="min-width:200px"><div class="muted" style="font-size:12px">Net worth</div>
+          <div style="font-size:22px;font-weight:700">${fmt(m.net)}</div>
+          <div class="legend" style="margin-top:10px">${legend}</div></div></div>
+      </div>
+      <div class="card"><h3>Value by asset class</h3>${bars}
+        <div class="note">Bars compare each sleeve's market value; Loans shown as a liability (red).</div>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="card"><h3>Allocation table</h3>
+        ${tableFor(['Asset class','Value','Weight'],allocRows.split('</tr>').filter(Boolean).map(r=>r+'</tr>'),
+          `<td>Net worth</td><td>${fmt(m.net)}</td><td>—</td>`)}
+      </div>
+      <div class="card"><h3>Upcoming coupons & accruals <span class="hint">next payment per instrument</span></h3>
+        ${couponHtml}
+        <div class="coupon" style="border-bottom:0;font-weight:700"><span>Total accrued to date</span><span></span>
+          <span style="text-align:right">${fmt(m.accrued)}</span></div>
+      </div>
+    </div>`;
+}
+
+function consolidateByTicker(list){
+  const g={};
+  list.forEach(r=>{ const k=r.ticker;
+    if(!g[k]) g[k]={...r, accounts:new Set([r.account])};
+    else { const o=g[k]; const nq=o.qty+r.qty;
+      o.avg_cost = nq? (o.qty*o.avg_cost+r.qty*r.avg_cost)/nq : r.avg_cost;
+      o.qty=nq; o.mvU+=r.mvU; o.pnlU+=r.pnlU; o.accounts.add(r.account); }
+  });
+  const rows=Object.values(g); const tot=rows.reduce((s,r)=>s+r.mvU,0);
+  rows.forEach(r=>{ r.w= tot? r.mvU/tot:0; const cost=r.mvU-r.pnlU; r.pnlPct= cost? r.pnlU/cost:0; });
+  return rows;
+}
+function viewEquities(model,titleTxt){
+  const grouped = groupByInstrument && state.account==='ALL';
+  const rowsData = grouped? consolidateByTicker(model.rows) : model.rows;
+  const rows=rowsData.map(r=>{
+    const acctTag = grouped ? (r.accounts.size>1? `<span class="tag">${r.accounts.size} accounts</span>` : `<span class="tag">${[...r.accounts][0]}</span>`) : `<span class="tag">${r.account}</span>`;
+    return `<tr><td><b>${r.ticker}</b> <span class="muted">${r.name}</span> ${acctTag}<br><span class="isin">${r.isin||''}</span></td>
+    <td>${fmtNum(r.qty)}</td><td>${fmtNum(r.avg_cost,2)}</td><td>${fmtNum(r.price,2)} <span class="tag">${r.ccy}</span></td>
+    <td>${fmt(r.mvU)}</td><td class="${cls(r.pnlU)}">${sign(r.pnlU)}</td>
+    <td class="${cls(r.pnlU)}">${(r.pnlPct*100).toFixed(1)}%</td>
+    <td class="${cls(r.ytd)}">${(r.ytd*100).toFixed(1)}%</td><td>${pct(r.w)}</td></tr>`;}).join('');
+  const foot=`<td>Total</td><td></td><td></td><td></td><td>${fmt(model.tot)}</td>
+    <td class="${cls(model.pnl)}">${sign(model.pnl)}</td><td></td><td></td><td>100%</td>`;
+  const toggle = state.account==='ALL' ? `<button class="btn ghost" style="float:right;font-size:12px;padding:3px 10px" onclick="groupByInstrument=!groupByInstrument;render()">${grouped?'● Consolidated':'○ By account'}</button>` : '';
+  return `<div class="kpis">
+    <div class="kpi"><div class="lbl">Market Value</div><div class="val">${fmt(model.tot)}</div></div>
+    <div class="kpi"><div class="lbl">Unrealized P&L</div><div class="val ${cls(model.pnl)}">${sign(model.pnl)}</div></div>
+    <div class="kpi"><div class="lbl">${grouped?'Instruments':'Positions'}</div><div class="val">${rowsData.length}</div></div></div>
+    <div class="card"><h3>${titleTxt} ${toggle}<span class="hint">prices in each instrument's own currency; values in ${state.ccy}. ${grouped?'Same ticker consolidated across accounts (weighted avg cost).':'One line per account — toggle to consolidate.'}</span></h3>
+    ${tableFor(['Position','Qty','Avg cost','Price','Mkt value','P&L','P&L %','YTD','Weight'],
+      rows.split('</tr>').filter(Boolean).map(r=>r+'</tr>'),foot)}
+    </div>`;
+}
+
+function viewBonds(model,titleTxt,sub){
+  const rows=model.rows.map(b=>`<tr><td><b>${b.id}</b> <span class="muted">${b.name}</span> <span class="tag">${b.account}</span><br><span class="isin">${b.isin||''}</span></td>
+    <td>${fmtNum(b.face)} <span class="tag">${b.ccy}</span></td><td>${b.coupon_pct.toFixed(2)}%</td>
+    <td>${(b.cost_pct!=null?b.cost_pct:b.price_pct).toFixed(2)}</td><td>${b.price_pct.toFixed(2)}</td>
+    <td>${(b.ytm*100).toFixed(2)}%</td><td>${b.mdur.toFixed(2)}</td>
+    <td>${b.next_coupon}<br><span class="muted">${b.dToNext}d</span></td>
+    <td class="pos">${fmt(b.accU)}</td><td class="${cls(b.pnlU)}">${sign(b.pnlU)}</td><td>${fmt(b.dirtyU)}</td></tr>`).join('');
+  const foot=`<td>Total</td><td></td><td></td><td></td><td></td><td></td><td>${model.wmdur.toFixed(2)}</td><td></td><td class="pos">${fmt(model.acc)}</td><td class="${cls(model.pnl)}">${sign(model.pnl)}</td><td>${fmt(model.tot)}</td>`;
+  return `<div class="kpis">
+    <div class="kpi"><div class="lbl">Dirty Value</div><div class="val">${fmt(model.tot)}</div></div>
+    <div class="kpi"><div class="lbl">Unrealized P&L</div><div class="val ${cls(model.pnl)}">${sign(model.pnl)}</div><div class="sub2">price vs cost</div></div>
+    <div class="kpi"><div class="lbl">Accrued Interest</div><div class="val pos">${fmt(model.acc)}</div><div class="sub2">grows daily</div></div>
+    <div class="kpi"><div class="lbl">Wtd Mod. Duration</div><div class="val">${model.wmdur.toFixed(2)}</div><div class="sub2">rate sensitivity (yrs)</div></div></div>
+    <div class="card"><h3>${titleTxt}<span class="hint">${sub}</span></h3>
+    ${tableFor(['Bond','Face','Coupon','Cost','Price','YTM','Mod dur','Next coupon','Accrued','Unreal. P&L','Dirty value'],
+      rows.split('</tr>').filter(Boolean).map(r=>r+'</tr>'),foot)}
+    <div class="note">Accrued = Face × Coupon × days since last coupon ÷ 365 (Actual/365). YTM & duration solved from clean price (even-period approximation; the Excel workbook uses exact YIELD/DURATION). Nominal YTM/duration are not meaningful for CER/inflation-linked bonds (e.g. TX26).</div></div>`;
+}
+
+function viewStructured(model){
+  const rows=model.rows.map(s=>`<tr><td><b>${s.id}</b><br><span class="muted">${s.name}</span> <span class="isin">${s.isin||''}</span></td>
+    <td>${fmtNum(s.notional)} <span class="tag">${s.ccy}</span></td><td>${s.accrual_pct.toFixed(2)}%</td>
+    <td>${s.mark.toFixed(2)}</td><td>${s.next_coupon}<br><span class="muted">${s.dToNext}d</span></td>
+    <td class="pos">${fmt(s.accU)}</td><td class="${cls(s.pnlU)}">${sign(s.pnlU)}</td><td>${fmt(s.valU)}</td></tr>`).join('');
+  const foot=`<td>Total</td><td></td><td></td><td></td><td></td><td class="pos">${fmt(model.acc)}</td><td class="${cls(model.pnl)}">${sign(model.pnl)}</td><td>${fmt(model.tot)}</td>`;
+  return `<div class="kpis">
+    <div class="kpi"><div class="lbl">Value + Accrued</div><div class="val">${fmt(model.tot)}</div></div>
+    <div class="kpi"><div class="lbl">Unrealized P&L</div><div class="val ${cls(model.pnl)}">${sign(model.pnl)}</div><div class="sub2">mark vs cost</div></div>
+    <div class="kpi"><div class="lbl">Accrued Interest</div><div class="val pos">${fmt(model.acc)}</div></div>
+    <div class="kpi"><div class="lbl">Notes</div><div class="val">${model.rows.length}</div></div></div>
+    <div class="card"><h3>Structured Products <span class="hint">accrue interest over time, pay coupons every period</span></h3>
+    ${tableFor(['Product','Notional','Accrual p.a.','Mark %','Next coupon','Accrued','Unreal. P&L','Value+accrued'],
+      rows.split('</tr>').filter(Boolean).map(r=>r+'</tr>'),foot)}
+    <div class="note">Unrealized P&L = notional × (mark − cost) ÷ 100. Accrued interest is shown separately as income earned to date.</div></div>`;
+}
+
+function viewFunds(model){
+  const rows=model.rows.map(r=>`<tr><td><b>${r.id}</b> <span class="muted">${r.name||''}</span> <span class="tag">${r.account}</span><br><span class="isin">${r.isin||''}</span></td>
+    <td><span class="pill">${r.fund_type||'Fund'}</span></td><td>${fmtNum(r.units,0)}</td><td>${fmtNum(r.nav,2)} <span class="tag">${r.ccy}</span></td>
+    <td>${fmtNum(r.cost_nav!=null?r.cost_nav:r.nav,2)}</td><td>${fmt(r.mvU)}</td>
+    <td class="${cls(r.pnlU)}">${sign(r.pnlU)}</td><td class="${cls(r.pnlU)}">${(r.pnlPct*100).toFixed(1)}%</td><td class="${cls(r.ytd)}">${(r.ytd*100).toFixed(1)}%</td><td>${pct(r.w)}</td></tr>`).join('')
+    || '<tr><td colspan="10" class="muted">No funds in this slice. Add one via the Operations tab (product type: Funds).</td></tr>';
+  const foot=`<td>Total</td><td></td><td></td><td></td><td></td><td>${fmt(model.tot)}</td><td class="${cls(model.pnl)}">${sign(model.pnl)}</td><td></td><td></td><td>100%</td>`;
+  return `<div class="kpis">
+    <div class="kpi"><div class="lbl">Market Value</div><div class="val">${fmt(model.tot)}</div></div>
+    <div class="kpi"><div class="lbl">Unrealized P&L</div><div class="val ${cls(model.pnl)}">${sign(model.pnl)}</div></div>
+    <div class="kpi"><div class="lbl">Funds</div><div class="val">${model.rows.length}</div></div></div>
+    <div class="card"><h3>Funds <span class="hint">ETFs, mutual funds, money-market (FCI) & alternatives — valued at units × NAV</span></h3>
+    ${tableFor(['Fund','Type','Units','NAV','Cost NAV','Value','P&L','P&L %','YTD','Weight'],
+      rows.split('</tr>').filter(Boolean).map(r=>r+'</tr>'),foot)}
+    <div class="note">Value = units (quotas) × NAV. YTD = NAV move since start of year. For distributing funds, add income to the ledger as you receive it.</div></div>`;
+}
+
+function viewOptions(model){
+  const gws=portfolioGreeks(); const byId=Object.fromEntries(gws.rows.map(o=>[o.id+'|'+o.account,o]));
+  const rows=model.rows.map(o=>{ const gw=byId[o.id+'|'+o.account]||{g:{delta:0},deltaSh:0,deltaUSD:0,thetaUSD:0};
+    return `<tr><td><b>${o.id}</b> <span class="tag">${o.account}</span></td><td>${o.underlying}</td><td>${o.type}</td>
+    <td>${fmtNum(o.strike,0)}</td><td>${o.expiry}<br><span class="muted">${o.dToExp}d</span></td>
+    <td>${o.contracts}</td><td>${fmtNum(o.entry_premium,2)}</td><td>${fmtNum(o.price,2)}</td>
+    <td>${gw.g.delta.toFixed(2)}</td><td>${fmt(gw.deltaUSD)}</td>
+    <td>${fmt(o.mvU)}</td><td class="${cls(o.pnlU)}">${sign(o.pnlU)}</td><td class="${cls(o.pnlU)}">${(o.pnlPct*100).toFixed(1)}%</td></tr>`;}).join('');
+  const foot=`<td>Total</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>${fmt(gws.deltaUSD)}</td><td>${fmt(model.tot)}</td><td class="${cls(model.pnl)}">${sign(model.pnl)}</td><td></td>`;
+  return `<div class="kpis">
+    <div class="kpi"><div class="lbl">Net Market Value</div><div class="val">${fmt(model.tot)}</div></div>
+    <div class="kpi"><div class="lbl">Unrealized P&L</div><div class="val ${cls(model.pnl)}">${sign(model.pnl)}</div></div>
+    <div class="kpi"><div class="lbl">Portfolio Delta ($)</div><div class="val" style="font-size:18px">${fmt(gws.deltaUSD)}</div><div class="sub2">directional exposure</div></div>
+    <div class="kpi"><div class="lbl">Theta ($/day)</div><div class="val ${cls(gws.thetaUSD)}" style="font-size:18px">${fmt(gws.thetaUSD)}</div></div></div>
+    <div class="card"><h3>Options <span class="hint">negative contracts = short · unrealized P&L vs entry premium · Greeks via Black-Scholes</span></h3>
+    ${tableFor(['Position','Underlying','Type','Strike','Expiry','Contracts','Entry','Price','Delta','Δ $','Mkt value','P&L','P&L %'],
+      rows.split('</tr>').filter(Boolean).map(r=>r+'</tr>'),foot)}
+    <div class="note">Unrealized P&L = (price − entry premium) × contracts × multiplier. P&L % is the return on premium paid/received. Theta, gamma & vega are on the Risk tab.</div></div>`;
+}
+
+function viewFutures(model){
+  const rows=model.rows.map(f=>`<tr><td><b>${f.id}</b> <span class="muted">${f.name}</span></td>
+    <td>${f.qty}</td><td>${fmtNum(f.entry_price,2)}</td><td>${fmtNum(f.price,2)}</td>
+    <td>${fmtNum(f.multiplier)}</td><td>${fmt(f.notU)}</td><td>${fmt(f.marginU)}</td>
+    <td class="${cls(f.pnlU)}">${sign(f.pnlU)}</td></tr>`).join('');
+  const foot=`<td>Total</td><td></td><td></td><td></td><td></td><td>${fmt(model.notional)}</td><td>${fmt(model.margin)}</td><td class="${cls(model.tot)}">${sign(model.tot)}</td>`;
+  return `<div class="kpis">
+    <div class="kpi"><div class="lbl">Unrealized P&L (MTM)</div><div class="val ${cls(model.tot)}">${sign(model.tot)}</div></div>
+    <div class="kpi"><div class="lbl">Notional Exposure</div><div class="val">${fmt(model.notional)}</div></div>
+    <div class="kpi"><div class="lbl">Margin Posted</div><div class="val">${fmt(model.margin)}</div></div></div>
+    <div class="card"><h3>Futures <span class="hint">marked to market; P&L = (price − entry) × qty × multiplier</span></h3>
+    ${tableFor(['Contract','Qty','Entry','Price','Mult','Notional','Margin','Unreal. P&L'],
+      rows.split('</tr>').filter(Boolean).map(r=>r+'</tr>'),foot)}</div>`;
+}
+
+function viewLoans(model){
+  const rows=model.rows.map(l=>`<tr><td><b>${l.id}</b></td><td>${fmtNum(l.principal)} <span class="tag">${l.ccy}</span></td>
+    <td>${l.rate_pct.toFixed(1)}%</td><td>${l.start_date}</td><td class="neg">${fmt(toUSD(l.accC,l.ccy))}</td>
+    <td class="neg">${fmt(l.owedU)}</td></tr>`).join('');
+  const foot=`<td>Total owed</td><td></td><td></td><td></td><td></td><td class="neg">${fmt(model.tot)}</td>`;
+  return `<div class="kpis">
+    <div class="kpi"><div class="lbl">Total Owed</div><div class="val neg">${fmt(model.tot)}</div></div>
+    <div class="kpi"><div class="lbl">Facilities</div><div class="val">${model.rows.length}</div></div></div>
+    <div class="card"><h3>Loans / Bank Overdraft <span class="hint">accrued interest grows daily</span></h3>
+    ${tableFor(['Facility','Principal','Rate p.a.','Since','Accrued int.','Total owed'],
+      rows.split('</tr>').filter(Boolean).map(r=>r+'</tr>'),foot)}</div>`;
+}
+
+function viewCash(model){
+  const rows=model.rows.map(c=>`<tr><td><b>${c.ccy}</b></td><td>${fmtNum(c.bal, c.ccy==='ARS'?0:2)}</td>
+    <td>${fmt(c.usd)}</td></tr>`).join('');
+  const foot=`<td>Total</td><td></td><td>${fmt(model.tot)}</td>`;
+  return `<div class="kpis">
+    <div class="kpi"><div class="lbl">Total Cash</div><div class="val">${fmt(model.tot)}</div></div></div>
+    <div class="card"><h3>Cash Position <span class="hint">derived from the ledger — single source of truth</span></h3>
+    ${tableFor(['Currency','Balance (native)','Value'],rows.split('</tr>').filter(Boolean).map(r=>r+'</tr>'),foot)}
+    <div class="note">Each balance = opening balance + every ledger flow in that currency. Edit the ledger to change cash.</div></div>`;
+}
+
+function viewLedger(){
+  const rows=ledgerRows().reverse().map(t=>`<tr><td>${t.date}</td><td>${t.type}</td><td><span class="tag">${t.account||''}</span></td>
+    <td class="muted">${t.asset_class}</td>
+    <td>${t.instrument}</td><td>${t.ccy}</td><td class="${cls(t.cash_flow)}">${fmtNum(t.cash_flow, t.ccy==='ARS'?0:2)}</td>
+    <td>${fmtNum(t.running, t.ccy==='ARS'?0:2)}</td></tr>`).join('');
+  return `<div class="card"><h3>Transaction Ledger <span class="hint">newest first · running balance is per account + currency</span></h3>
+    ${tableFor(['Date','Type','Account','Class','Instrument','Ccy','Cash flow','Running bal (acct·ccy)'],
+      rows.split('</tr>').filter(Boolean).map(r=>r+'</tr>'))}
+    <div class="note">Each running balance tracks one account in one currency — so it shows exactly what that bank/broker holds in cash, and the per-account cash reconciles to it. Filter by account in the header to isolate one.</div></div>`;
+}
+
+/* ---------------- Analysis ---------------- */
+// Each snapshot carries the FX that applied ON ITS DATE, so a value shown in
+// EUR/ARS uses the period's own rate — not today's. This is the fix for
+// "you do not take the price of that currency at the beginning of the period".
+let anClass='ALL';   // Analysis-local asset-class selector
+let anMode='single'; // 'single' | 'compare'
+let anCompareBy='account'; // 'account' | 'class'
+let anCompareSet=null;     // Set of ids to plot; null => all
+let anCmpStart=null, anCmpEnd=null;   // compare window (default year_start..today)
+let anBench='none';        // 'none' | 'sp500' | 'hurdle'
+let groupByInstrument=false; // equities: consolidate same ticker across accounts
+const SERIES_COLORS=['--s1','--s2','--s3','--s4','--s5','--s6','--s7','--s8'];
+const ANALYSIS_CLASSES=['Global Equities','Argentine Equities','Funds','International Bonds',
+  'Argentine Bonds','Structured Products','Options','Futures','Cash'];
+// multi-series indexed line chart (each series rebased to 100 at its first point)
+function multiLineChart(seriesList){
+  const W=560,H=240,padL=42,padR=16,padT=14,padB=34;
+  const all=seriesList.flatMap(s=>s.pts); if(!all.length) return '';
+  const xs=all.map(p=>pdate(p.date).getTime());
+  const xmin=Math.min(...xs),xmax=Math.max(...xs);
+  let ymin=Math.min(...all.map(p=>p.idx)),ymax=Math.max(...all.map(p=>p.idx));
+  const pad=(ymax-ymin)*0.1||1; ymin-=pad; ymax+=pad;
+  const X=t=>padL+((t-xmin)/((xmax-xmin)||1))*(W-padL-padR);
+  const Y=v=>padT+(1-(v-ymin)/((ymax-ymin)||1))*(H-padT-padB);
+  const gy=[ymin,(ymin+ymax)/2,ymax].map(v=>`<line x1="${padL}" y1="${Y(v).toFixed(1)}" x2="${W-padR}" y2="${Y(v).toFixed(1)}" stroke="var(--grid)" stroke-width="1"/><text x="${padL-6}" y="${(Y(v)+3).toFixed(1)}" text-anchor="end" font-size="10">${v.toFixed(0)}</text>`).join('');
+  const base100 = (ymin<100&&ymax>100)?`<line x1="${padL}" y1="${Y(100).toFixed(1)}" x2="${W-padR}" y2="${Y(100).toFixed(1)}" stroke="var(--axis)" stroke-dasharray="3 3"/>`:'';
+  const paths=seriesList.map(s=>{ let d=''; s.pts.forEach((p,i)=>{d+=(i?'L':'M')+X(pdate(p.date).getTime()).toFixed(1)+' '+Y(p.idx).toFixed(1)+' ';});
+    const last=s.pts[s.pts.length-1];
+    const dash=s.dashed?' stroke-dasharray="5 4"':'';
+    return `<path d="${d}" fill="none" stroke="var(${s.color})" stroke-width="${s.dashed?2:2}"${dash}><title>${s.name}</title></path>`+
+      `<circle cx="${X(pdate(last.date).getTime()).toFixed(1)}" cy="${Y(last.idx).toFixed(1)}" r="3.2" fill="var(${s.color})"><title>${s.name}: ${last.idx.toFixed(1)}</title></circle>`;
+  }).join('');
+  const xl=[all[0],all[all.length-1]].map(()=>0); // labels
+  const lab=`<text x="${padL}" y="${H-8}" font-size="10">${seriesList[0].pts[0].date}</text>`+
+    `<text x="${W-padR}" y="${H-8}" text-anchor="end" font-size="10">${seriesList[0].pts[seriesList[0].pts.length-1].date}</text>`;
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" preserveAspectRatio="xMidYMid meet">${gy}${base100}${paths}${lab}</svg>`;
+}
+// live per-account and per-class net worth (USD), for the "today" endpoint of any slice
+function liveBreakdowns(){
+  const saved=state.account; state.account='ALL'; const mAll=buildModel(); state.account=saved;
+  const byClass=Object.fromEntries(mAll.classes); byClass['Loans']=-mAll.liab;
+  const accts=accountBreakdown(); // [{id,net,classMap,liab}]
+  const byAcct=Object.fromEntries(accts.map(a=>[a.id,a.net]));
+  const acctClass={}; accts.forEach(a=>{ acctClass[a.id]={...a.classMap, Loans:-a.liab}; });
+  return {total:mAll.net, byClass, byAcct, acctClass};
+}
+// USD value of the selected (account × class) slice at a historical snapshot
+function sliceHistUSD(sp, acct, klass, live){
+  if(acct==='ALL' && klass==='ALL') return sp.net_worth_usd;
+  if(acct!=='ALL' && klass==='ALL') return (sp.by_account||{})[acct] ?? 0;
+  if(acct==='ALL' && klass!=='ALL') return (sp.by_class||{})[klass] ?? 0;
+  const base=(sp.by_account||{})[acct] ?? 0;                 // intersection: scale account path
+  const share = live.byAcct[acct] ? ((live.acctClass[acct]||{})[klass]||0)/live.byAcct[acct] : 0;
+  return base*share;
+}
+function sliceLiveUSD(acct, klass, live){
+  if(acct==='ALL' && klass==='ALL') return live.total;
+  if(acct!=='ALL' && klass==='ALL') return live.byAcct[acct]||0;
+  if(acct==='ALL' && klass!=='ALL') return live.byClass[klass]||0;
+  return (live.acctClass[acct]||{})[klass]||0;
+}
+function snapshotSeries(acct, klass){
+  const live=liveBreakdowns();
+  const s=DATA.snapshots.map(x=>({date:x.date, usd:sliceHistUSD(x,acct,klass,live),
+    fx:x.fx||{EUR_per_USD:state.fx.EUR_per_USD, ars_rates:state.fx.ars_rates}}));
+  s.push({date:today().toISOString().slice(0,10), usd:sliceLiveUSD(acct,klass,live), fx:state.fx});
+  s.sort((a,b)=> a.date<b.date?-1:1);
+  s.forEach(p=>{ p.value = dispAt(p.usd, p.fx); });   // display ccy at each point's own fx
+  return s;
+}
+function pointAt(series,dateStr){
+  let p=series[0];
+  for(const q of series){ if(q.date<=dateStr) p=q; else break; }
+  return p;
+}
+// build one indexed series per account or asset class, rebased to 100 at window start [a,b]
+function windowIndex(fullPts, a, b){
+  const base = pointAt(fullPts, a).value || 1;                 // value at/just before window start
+  const inWin = fullPts.filter(p=>p.date>=a && p.date<=b);
+  const pts = (inWin.length && inWin[0].date===a) ? inWin : [{date:a, value:base}, ...inWin];
+  pts.forEach(p=>p.idx = 100*p.value/base);
+  const endVal = pointAt(fullPts, b).value;
+  return {pts, ret: base? endVal/base-1 : 0, now:endVal};
+}
+function compareSeries(by, ids, a, b){
+  const live=liveBreakdowns();
+  const snaps=[...DATA.snapshots].sort((x,y)=> x.date<y.date?-1:1);
+  const tdy=today().toISOString().slice(0,10);
+  return ids.map((id,i)=>{
+    const full=snaps.map(sp=>{
+      const usd = by==='account'? ((sp.by_account||{})[id]||0) : ((sp.by_class||{})[id]||0);
+      const fx=sp.fx||{EUR_per_USD:state.fx.EUR_per_USD,ars_rates:state.fx.ars_rates};
+      return {date:sp.date, value:dispAt(usd,fx)};
+    });
+    full.push({date:tdy, value:dispAt(by==='account'?(live.byAcct[id]||0):(live.byClass[id]||0), state.fx)});
+    const w=windowIndex(full, a, b);
+    return {id, name: by==='account'?ACCT_NAME(id):id, color:SERIES_COLORS[i%8], pts:w.pts, now:w.now, ytd:w.ret};
+  });
+}
+// benchmark series over the same window (S&P 500 index, or a fixed hurdle rate)
+function benchmarkSeries(a, b){
+  if(anBench==='none') return null;
+  const snaps=[...DATA.snapshots].sort((x,y)=> x.date<y.date?-1:1);
+  const tdy=today().toISOString().slice(0,10);
+  if(anBench==='sp500'){
+    const full=snaps.filter(sp=>sp.sp500!=null).map(sp=>({date:sp.date, value:sp.sp500}));
+    const nowLvl=(DATA.benchmarks||{}).sp500_now; if(nowLvl) full.push({date:tdy, value:nowLvl});
+    if(full.length<2) return null;
+    const w=windowIndex(full, a, b);
+    return {id:'__bench', name:'S&P 500', color:'--ink-2', dashed:true, pts:w.pts, now:w.now, ytd:w.ret, isBench:true};
+  }
+  // fixed hurdle: compounding line from 100
+  const h=((DATA.benchmarks||{}).hurdle_pct||8)/100;
+  const mid=snaps.map(s=>s.date).filter(dt=>dt>a && dt<b);
+  const uniq=[...new Set([a, ...mid, (b>tdy?tdy:b)])].sort();
+  const pts=uniq.map(dt=>({date:dt, idx:100*Math.pow(1+h, Math.max(0,daysBetween(pdate(a),pdate(dt)))/365)}));
+  return {id:'__bench', name:`Hurdle ${(h*100).toFixed(0)}%/yr`, color:'--ink-2', dashed:true, pts, now:null, ytd:pts[pts.length-1].idx/100-1, isBench:true};
+}
+function toggleCompare(id){
+  if(!anCompareSet) anCompareSet=new Set();
+  if(anCompareSet.has(id)) anCompareSet.delete(id); else anCompareSet.add(id);
+  render();
+}
+window.__series=null;
+function computeRange(){
+  const s=window.__series; if(!s) return;
+  if(!document.getElementById('rngStart')) return;   // not in single mode
+  const chart=document.getElementById('anChart');
+  const a=document.getElementById('rngStart').value, b=document.getElementById('rngEnd').value;
+  if(!a||!b) return;
+  const pa=pointAt(s,a), pb=pointAt(s,b);
+  const va=pa.value, vb=pb.value;               // both already in display ccy at their own fx
+  const ret= va? vb/va-1 : 0;
+  const days=Math.max(1,daysBetween(pdate(a),pdate(b)));
+  const ann=days>0? Math.pow(1+ret,365/days)-1 : 0;
+  // redraw the chart to the selected window (this is what "updates with the range")
+  if(chart){
+    const win=s.filter(p=>p.date>=a && p.date<=b);
+    const pts=(win.length>=2?win:[pa,pb]);
+    chart.innerHTML=lineChart(pts);
+  }
+  const fxNote = state.ccy==='USD' ? '' :
+    ` <span class="muted">(${state.ccy} at each date's own rate: ${a} @ ${fmtNum(perUSDat(pa.fx,state.ccy),state.ccy==='ARS'?0:4)}, ${b} @ ${fmtNum(perUSDat(pb.fx,state.ccy),state.ccy==='ARS'?0:4)})</span>`;
+  document.getElementById('rngOut').innerHTML=
+    `<div class="barrow" style="grid-template-columns:1fr auto"><span class="muted">Value on ${a}</span><b>${CCY_SYM[state.ccy]}${fmtNum(va,state.ccy==='ARS'?0:2)}</b></div>`+
+    `<div class="barrow" style="grid-template-columns:1fr auto"><span class="muted">Value on ${b}</span><b>${CCY_SYM[state.ccy]}${fmtNum(vb,state.ccy==='ARS'?0:2)}</b></div>`+
+    `<div class="barrow" style="grid-template-columns:1fr auto"><span class="muted">Return over ${days} days</span><b class="${cls(ret)}">${(ret*100).toFixed(2)}%</b></div>`+
+    `<div class="barrow" style="grid-template-columns:1fr auto"><span class="muted">Annualized</span><b class="${cls(ann)}">${(ann*100).toFixed(2)}%</b></div>`+
+    (state.ccy!=='USD'?`<div class="note" style="margin-top:8px">Return computed in ${state.ccy} using the FX of each endpoint date${fxNote}.</div>`:'');
+}
+const AN_MODE_TOGGLE=()=>`<div class="seg" style="margin-bottom:14px">
+    <button class="${anMode==='single'?'active':''}" onclick="anMode='single';render()">Single slice</button>
+    <button class="${anMode==='compare'?'active':''}" onclick="anMode='compare';render()">Compare</button></div>`;
+function viewCompare(m){
+  const by=anCompareBy;
+  const snapDates=[...DATA.snapshots].map(s=>s.date).sort();
+  const td=today().toISOString().slice(0,10);
+  if(!anCmpStart) anCmpStart=DATA.meta.year_start;
+  if(!anCmpEnd) anCmpEnd=td;
+  const a=anCmpStart, b=anCmpEnd;
+  const days=Math.max(1,daysBetween(pdate(a),pdate(b)));
+  const allIds = by==='account'? DATA.accounts.map(x=>x.id) : ANALYSIS_CLASSES;
+  if(!anCompareSet) anCompareSet=new Set(allIds);
+  const chosen = allIds.filter(id=>anCompareSet.has(id));
+  const ids = chosen.length? chosen : allIds;
+  let series=compareSeries(by, ids, a, b);
+  const bench=benchmarkSeries(a,b);
+  const plot = bench? series.concat([bench]) : series;
+  const chips=allIds.map((id,i)=>{
+    const on=anCompareSet.has(id); const nm=by==='account'?ACCT_NAME(id):id;
+    return `<button class="chipbtn${on?' on':''}" onclick="toggleCompare('${id}')"><i style="background:var(${SERIES_COLORS[i%8]})"></i>${nm}</button>`;
+  }).join('');
+  const legItems=series.concat(bench?[bench]:[]);
+  const legend=legItems.map(s=>`<span>${s.isBench?`<i style="width:12px;height:0;border-top:2px dashed var(${s.color});display:inline-block;vertical-align:middle"></i>`:chip(s.color)} ${s.name} <b class="${cls(s.ytd)}">${(s.ytd*100).toFixed(1)}%</b></span>`).join('');
+  const rank=legItems.slice().sort((x,y)=>y.ytd-x.ytd).map(s=>`<tr><td>${s.isBench?'⋯':chip(s.color)} ${s.name}${s.isBench?' <span class="tag">benchmark</span>':''}</td>
+    <td>${s.now!=null?CCY_SYM[state.ccy]+fmtNum(s.now,0):'<span class="muted">—</span>'}</td><td class="${cls(s.ytd)}">${(s.ytd*100).toFixed(1)}%</td></tr>`).join('');
+  const rangeLbl = (a===DATA.meta.year_start && b===td)?'YTD':`${a} → ${b}`;
+  const benchSel=`<select id="anBenchSel" onchange="anBench=this.value;render()">
+      <option value="none"${anBench==='none'?' selected':''}>No benchmark</option>
+      <option value="sp500"${anBench==='sp500'?' selected':''}>S&P 500</option>
+      <option value="hurdle"${anBench==='hurdle'?' selected':''}>Hurdle ${((DATA.benchmarks||{}).hurdle_pct||8)}%/yr</option>
+    </select>`;
+  return AN_MODE_TOGGLE()+`
+  <div class="card" style="margin-bottom:16px;display:flex;gap:16px 20px;align-items:end;flex-wrap:wrap">
+    <div><span class="muted" style="font-size:12px">Compare by</span><br>
+      <div class="seg" style="margin-top:4px"><button class="${by==='account'?'active':''}" onclick="anCompareBy='account';anCompareSet=null;render()">Accounts</button>
+        <button class="${by==='class'?'active':''}" onclick="anCompareBy='class';anCompareSet=null;render()">Asset classes</button></div></div>
+    <div><label style="font-size:11.5px" class="muted">From</label><input type="date" id="cmpStart" value="${a}" min="${snapDates[0]}" max="${td}" onchange="anCmpStart=this.value;render()"></div>
+    <div><label style="font-size:11.5px" class="muted">To</label><input type="date" id="cmpEnd" value="${b}" min="${snapDates[0]}" max="${td}" onchange="anCmpEnd=this.value;render()"></div>
+    <div><label style="font-size:11.5px" class="muted">Benchmark</label><br>${benchSel}</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-left:auto;max-width:60%;justify-content:flex-end">${chips}</div>
+  </div>
+  <div class="card"><h3>Indexed performance <span class="hint">rebased to 100 at ${a}, ${state.ccy} at each date's FX · ${days} days</span></h3>
+    ${multiLineChart(plot)}
+    <div class="legend" style="margin-top:12px">${legend}</div>
+    <div class="note">Each line is rebased to 100 at <b>${a}</b>, so slopes compare <b>returns</b> over ${rangeLbl} directly regardless of size.${bench?` The dashed line is the ${anBench==='sp500'?'S&P 500':'fixed hurdle'} benchmark.`:''} ${state.ccy!=='USD'?'Currency effects are included — each point uses its own date’s FX.':'Toggle EUR/ARS in the header to compare in another currency.'}</div>
+  </div>
+  <div class="card"><h3>Ranking <span class="hint">return over ${rangeLbl}, in ${state.ccy}, best to worst</span></h3>
+    ${tableFor([by==='account'?'Account':'Asset class','Value now','Return'],rank.split('</tr>').filter(Boolean).map(r=>r+'</tr>'))}
+  </div>`;
+}
+function viewAnalysis(m){
+  if(anMode==='compare') return viewCompare(m);
+  const acct=state.account, klass=anClass;
+  const s=snapshotSeries(acct, klass); window.__series=s;
+  const yearStart=s[0].value, cur=s[s.length-1].value, ytd= yearStart? cur/yearStart-1:0;
+  const sliceLabel = (acct==='ALL'?'Whole portfolio':ACCT_NAME(acct)) + (klass==='ALL'?'':' · '+klass);
+  // income & per-instrument respect BOTH filters
+  const LCLASS={'International Bonds':'Bonds Intl','Argentine Bonds':'Bonds ARG','Structured Products':'Structured','Global Equities':'Equities Global','Argentine Equities':'Equities ARG','Funds':'Funds','Options':'Options','Futures':'Futures','Cash':'Cash'};
+  const income=ledgerFiltered().filter(t=>(t.type==='Coupon'||t.type==='Dividend') && (klass==='ALL'||t.asset_class===LCLASS[klass])).reduce((a,t)=>a+toUSD(t.cash_flow,t.ccy),0);
+  const incomeYield= (cur&&perUSDat(state.fx,state.ccy))? income/(cur/perUSDat(state.fx,state.ccy)):0;
+  const assets=[]
+    .concat(klass==='ALL'||klass==='Global Equities'? m.eg.rows.map(r=>({n:r.ticker,c:'Global Eq',y:r.ytd,v:r.mvU})):[])
+    .concat(klass==='ALL'||klass==='Argentine Equities'? m.ea.rows.map(r=>({n:r.ticker,c:'ARG Eq',y:r.ytd,v:r.mvU})):[])
+    .concat(klass==='ALL'||klass==='International Bonds'? m.bi.rows.map(r=>({n:r.id,c:'Intl Bond',y:r.ytd,v:r.dirtyU})):[])
+    .concat(klass==='ALL'||klass==='Argentine Bonds'? m.ba.rows.map(r=>({n:r.id,c:'ARG Bond',y:r.ytd,v:r.dirtyU})):[]);
+  assets.sort((a,b)=>b.y-a.y);
+  const arows=assets.length? assets.map(a=>`<tr><td>${a.n} <span class="tag">${a.c}</span></td><td>${fmt(a.v)}</td>
+    <td class="${cls(a.y)}">${(a.y*100).toFixed(1)}%</td></tr>`).join('')
+    : `<tr><td colspan="3" class="muted">No priced instruments in this slice (e.g. Cash / Options / Futures have no price-YTD).</td></tr>`;
+  const best=assets[0], worst=assets[assets.length-1];
+  const ys=DATA.meta.year_start, td=today().toISOString().slice(0,10);
+  const dccy=v=>CCY_SYM[state.ccy]+fmtNum(v,0);
+  const interNote = (acct!=='ALL'&&klass!=='ALL')
+    ? `<div class="note" style="margin-bottom:14px">Slice = <b>${ACCT_NAME(acct)} · ${klass}</b>. Historical path scales the account's history by this sleeve's current share of the account (a template approximation; the connector can log exact per-slice history going forward).</div>` : '';
+  const classSel=`<select id="anClassSel" onchange="anClass=this.value;render();">
+      <option value="ALL"${klass==='ALL'?' selected':''}>All asset classes</option>
+      ${ANALYSIS_CLASSES.map(c=>`<option value="${c}"${c===klass?' selected':''}>${c}</option>`).join('')}</select>`;
+  return AN_MODE_TOGGLE()+`${interNote}<div class="card" style="margin-bottom:16px;display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+      <div><span class="muted" style="font-size:12px">Analyzing</span><div style="font-size:16px;font-weight:700">${sliceLabel}</div></div>
+      <div style="margin-left:auto;display:flex;gap:10px;align-items:center">
+        <span class="muted" style="font-size:12px">Account: <b>${acct==='ALL'?'All':ACCT_NAME(acct)}</b> <span class="tag">header filter</span></span>
+        <label style="font-size:12px" class="muted">Asset class</label>${classSel}
+      </div>
+    </div>
+  <div class="kpis">
+    <div class="kpi"><div class="lbl">YTD (${state.ccy})</div><div class="val ${cls(ytd)}">${(ytd*100).toFixed(1)}%</div><div class="sub2">${dccy(yearStart)} → ${dccy(cur)}</div></div>
+    <div class="kpi"><div class="lbl">Value Now</div><div class="val">${CCY_SYM[state.ccy]}${fmtNum(cur,state.ccy==='ARS'?0:0)}</div><div class="sub2">${sliceLabel}</div></div>
+    <div class="kpi"><div class="lbl">Income (coupons+div)</div><div class="val pos">${fmt(income)}</div><div class="sub2">yield ${(incomeYield*100).toFixed(2)}%</div></div>
+    <div class="kpi"><div class="lbl">Best / Worst YTD</div><div class="val" style="font-size:16px">${best?`<span class="pos">${best.n} ${(best.y*100).toFixed(0)}%</span> · <span class="neg">${worst.n} ${(worst.y*100).toFixed(0)}%</span>`:'<span class="muted">n/a</span>'}</div></div>
+  </div>
+  <div class="grid2">
+    <div class="card"><h3>${klass==='ALL'&&acct==='ALL'?'Net worth':'Value'} over time <span class="hint">in ${state.ccy}, each point at its own date's FX</span></h3>
+      <div id="anChart"></div>
+      <div class="note">Series = ${sliceLabel}. The chart redraws to your selected range. ${state.ccy!=='USD'?'Values use each date’s own exchange rate.':''}</div></div>
+    <div class="card"><h3>Custom date-range return</h3>
+      <div class="ops" style="grid-template-columns:1fr 1fr">
+        <div><label>Start</label><input type="date" id="rngStart" value="${ys}" min="${s[0].date}" max="${td}" oninput="computeRange()"></div>
+        <div><label>End</label><input type="date" id="rngEnd" value="${td}" min="${s[0].date}" max="${td}" oninput="computeRange()"></div>
+      </div>
+      <div id="rngOut" style="margin-top:14px"></div>
+      <div class="note">Uses the nearest snapshot at or before each date. Annualized assumes simple compounding.</div>
+    </div>
+  </div>
+  <div class="card"><h3>Per-instrument YTD <span class="hint">price return since ${ys}${acct!=='ALL'?' · '+ACCT_NAME(acct):''}${klass!=='ALL'?' · '+klass:''}</span></h3>
+    ${tableFor(['Instrument','Market value','Price YTD'],arows.split('</tr>').filter(Boolean).map(r=>r+'</tr>'))}
+  </div>`;
+}
+
+function viewPnL(m){
+  const ur=m.unrealByClass.filter(c=>Math.abs(c[1])>0.005);
+  const urRows=m.unrealByClass.map(c=>`<tr><td>${c[0]}</td><td class="${cls(c[1])}">${sign(c[1])}</td></tr>`).join('');
+  const rz=m.realizedEvents;
+  const rzRows=rz.length? rz.map(e=>`<tr><td>${e.date}</td><td>${e.instrument} <span class="tag">${e.cls}</span></td>
+    <td>${fmtNum(e.qty)}</td><td>${CCY_SYM[e.ccy]||''}${fmtNum(e.proceeds,2)}</td><td>${CCY_SYM[e.ccy]||''}${fmtNum(e.cost,2)}</td>
+    <td class="${cls(e.realizedU)}">${sign(e.realizedU)}</td></tr>`).join('')
+    : `<tr><td colspan="6" class="muted">No closed trades yet. Record a sell in the Operations tab.</td></tr>`;
+  const total=m.unreal+m.realized+m.income;
+  return `<div class="kpis">
+    <div class="kpi"><div class="lbl">Unrealized P&L</div><div class="val ${cls(m.unreal)}">${sign(m.unreal)}</div><div class="sub2">open positions, mark vs cost</div></div>
+    <div class="kpi"><div class="lbl">Realized P&L</div><div class="val ${cls(m.realized)}">${sign(m.realized)}</div><div class="sub2">closed trades (avg cost)</div></div>
+    <div class="kpi"><div class="lbl">Income</div><div class="val pos">${fmt(m.income)}</div><div class="sub2">coupons + dividends</div></div>
+    <div class="kpi"><div class="lbl">Total P&L</div><div class="val ${cls(total)}">${sign(total)}</div><div class="sub2">unrealized + realized + income</div></div>
+  </div>
+  <div class="grid2">
+    <div class="card"><h3>Unrealized P&L by asset class <span class="hint">current value − cost basis, in ${state.ccy}</span></h3>
+      ${tableFor(['Asset class','Unrealized P&L'],urRows.split('</tr>').filter(Boolean).map(r=>r+'</tr>'),
+        `<td>Total unrealized</td><td class="${cls(m.unreal)}">${sign(m.unreal)}</td>`)}
+      <div class="note">Equities: qty×(price−avg cost). Bonds: face×(price−cost)/100. Structured: notional×(mark−cost)/100. Options & futures: (price−entry)×size.</div>
+    </div>
+    <div class="card"><h3>Realized P&L — closed trades <span class="hint">proceeds − average cost of units sold</span></h3>
+      ${tableFor(['Date','Instrument','Qty','Proceeds','Cost','Realized (USD)'],rzRows.split('</tr>').filter(Boolean).map(r=>r+'</tr>'),
+        `<td>Total realized</td><td></td><td></td><td></td><td></td><td class="${cls(m.realized)}">${sign(m.realized)}</td>`)}
+      <div class="note">Built from Buy/Sell rows in the ledger (average-cost). Options/futures P&L is shown as unrealized mark-to-market instead. Realized converted at current FX.</div>
+    </div>
+  </div>`;
+}
+
+/* ---------------- Operations (buy / sell / cash events) ---------------- */
+const LS_KEY='inv_dashboard_data_v1';
+function allInstruments(){
+  const names=new Set();
+  (DATA.equities_global||[]).forEach(x=>names.add(x.ticker));
+  (DATA.equities_arg||[]).forEach(x=>names.add(x.ticker));
+  (DATA.bonds_intl||[]).concat(DATA.bonds_arg||[],DATA.structured||[],DATA.funds||[]).forEach(x=>names.add(x.id));
+  (DATA.options||[]).forEach(x=>names.add(x.id));
+  (DATA.futures||[]).forEach(x=>names.add(x.id));
+  (DATA.loans||[]).forEach(x=>names.add(x.id));
+  return [...names];
+}
+/* ---- adaptive Operations form ---- */
+// field spec per product type: [id, label, type]  (type: text|number|date|list of "select:A,B")
+const OP_SPEC={
+  'Equities Global':[['opInst','Ticker (e.g. FOUR)','text'],['opName','Name','text'],['opISIN','ISIN','text'],['opQty','Quantity','number'],['opPrice','Price','number']],
+  'Equities ARG':[['opInst','Ticker','text'],['opName','Name','text'],['opISIN','ISIN','text'],['opQty','Quantity','number'],['opPrice','Price (ARS)','number']],
+  'Funds':[['opInst','Fund ID','text'],['opName','Name','text'],['opISIN','ISIN','text'],['opFundType','Type','select:ETF,Mutual Fund,Money Market FCI,Hedge Fund,Private Equity,Real Estate'],['opUnits','Units / quotas','number'],['opNav','NAV (price/unit)','number']],
+  'Bonds Intl':[['opInst','Bond ID','text'],['opName','Name','text'],['opISIN','ISIN','text'],['opFace','Face value','number'],['opCoupon','Coupon %','number'],['opFreq','Coupons/yr','number'],['opPrice','Price % (e.g. 98.5)','number'],['opLast','Last coupon','date'],['opNext','Next coupon','date'],['opMaturity','Maturity','date']],
+  'Bonds ARG':[['opInst','Bond ID','text'],['opName','Name','text'],['opISIN','ISIN','text'],['opFace','Face value','number'],['opCoupon','Coupon %','number'],['opFreq','Coupons/yr','number'],['opPrice','Price % (e.g. 72.5)','number'],['opLast','Last coupon','date'],['opNext','Next coupon','date'],['opMaturity','Maturity','date']],
+  'Structured':[['opInst','Product ID','text'],['opName','Description','text'],['opISIN','ISIN','text'],['opNotional','Notional','number'],['opAccrual','Accrual % p.a.','number'],['opFreq','Coupons/yr','number'],['opCost','Cost % (paid)','number'],['opMark','Mark % (now)','number'],['opIssue','Issue date','date'],['opLast','Last coupon','date'],['opNext','Next coupon','date'],['opMaturity','Maturity','date']],
+  'Options':[['opInst','Position ID','text'],['opUnd','Underlying','text'],['opISIN','Und. ISIN','text'],['opOptType','Type','select:Call,Put'],['opStrike','Strike','number'],['opExpiry','Expiry','date'],['opContracts','Contracts (– = short)','number'],['opMult','Multiplier','number'],['opPrice','Premium / price','number']],
+  'Futures':[['opInst','Contract ID','text'],['opName','Name','text'],['opFQty','Qty (– = short)','number'],['opEntry','Entry price','number'],['opPrice','Current price','number'],['opMult','Multiplier','number'],['opMargin','Margin','number']],
+  'Loans':[['opInst','Facility ID','text'],['opPrincipal','Principal','number'],['opRate','Rate % p.a.','number'],['opStart','Start date','date']],
+  'Cash':[['opInst','Note (optional)','text']]
+};
+function opFieldHTML(f){
+  const [id,label,type]=f;
+  if(type&&type.startsWith('select:')){
+    const opts=type.slice(7).split(',').map(o=>`<option>${o}</option>`).join('');
+    return `<div><label>${label}</label><select id="${id}">${opts}</select></div>`;
+  }
+  const list = id==='opInst' ? ' list="instList"' : '';
+  return `<div><label>${label}</label><input id="${id}" type="${type}" step="any"${list} oninput="opAutofill()"></div>`;
+}
+function renderOpFields(){
+  const cls_=document.getElementById('opClass').value;
+  const spec=OP_SPEC[cls_]||[];
+  document.getElementById('opFields').innerHTML=spec.map(opFieldHTML).join('');
+  // default currency by class
+  const ccySel=document.getElementById('opCcy');
+  if(ccySel && !ccySel.dataset.touched){ ccySel.value = (cls_==='Equities ARG'||cls_==='Bonds ARG')?'ARS':'USD'; }
+  opAutofill();
+}
+function gv(id){ const e=document.getElementById(id); return e? e.value.trim() : ''; }
+function gn(id){ return parseFloat(gv(id))||0; }
+// compute the gross cash for a buy/sell given the product type
+function opGross(cls_){
+  if(cls_.startsWith('Equities')) return gn('opQty')*gn('opPrice');
+  if(cls_==='Funds') return gn('opUnits')*gn('opNav');
+  if(cls_.startsWith('Bonds')) return gn('opFace')*gn('opPrice')/100;
+  if(cls_==='Structured') return gn('opNotional')*(gn('opCost')||100)/100;
+  if(cls_==='Options') return gn('opContracts')*gn('opMult')*gn('opPrice'); // sign via contracts
+  if(cls_==='Futures') return 0;      // no upfront cost
+  if(cls_==='Loans') return gn('opPrincipal');
+  return 0;
+}
+function opAutofill(){
+  const type=gv('opType'), cls_=gv('opClass'); const cf=document.getElementById('opCash'); if(!cf) return;
+  if(cf.dataset.touched) return;
+  let cash=0; const gross=opGross(cls_);
+  if(cls_==='Options'){ cash = -gross; }          // long (+contracts) costs cash; short (–) receives
+  else if(cls_==='Loans'){ cash = type==='Buy'||type==='Loan Drawdown'? gross : -gross; }
+  else if(cls_==='Futures'){ cash = 0; }
+  else { cash = type==='Buy'? -gross : type==='Sell'? gross : 0; }
+  cf.value = cash? cash.toFixed(2) : '';
+}
+function addOperation(){
+  const type=gv('opType'), cls_=gv('opClass'), acct=gv('opAcct'), ccy=gv('opCcy');
+  const date=gv('opDate')||today().toISOString().slice(0,10);
+  const inst=gv('opInst');
+  if(!inst && cls_!=='Cash'){ alert('Enter an instrument ID / ticker.'); return; }
+  let cash=parseFloat(gv('opCash')); if(isNaN(cash)) cash=0;
+  const in6mo=()=>{const d=today();d.setUTCMonth(d.getUTCMonth()+6);return d.toISOString().slice(0,10);};
+  const in5yr=()=>{const d=today();d.setUTCFullYear(d.getUTCFullYear()+5);return d.toISOString().slice(0,10);};
+  const tdy=today().toISOString().slice(0,10);
+  let qtyForLedger, priceForLedger, note=inst;
+
+  if(type==='Buy'||type==='Sell'){
+    if(cls_==='Equities Global'||cls_==='Equities ARG'){
+      const list=cls_==='Equities Global'?DATA.equities_global:DATA.equities_arg;
+      const qty=gn('opQty'), price=gn('opPrice'); qtyForLedger=qty; priceForLedger=price;
+      let pos=list.find(x=>x.ticker.toLowerCase()===inst.toLowerCase()&&x.account===acct);
+      if(pos){ if(type==='Buy'){const nq=pos.qty+qty; pos.avg_cost=nq?(pos.qty*pos.avg_cost+qty*price)/nq:price; pos.qty=nq;} else pos.qty=Math.max(0,pos.qty-qty); if(price)pos.price=price; }
+      else if(type==='Buy'){ list.push({ticker:inst.toUpperCase(),isin:gv('opISIN'),name:gv('opName')||inst,account:acct,qty,avg_cost:price,price,price_soy:price,ccy}); }
+    } else if(cls_==='Funds'){
+      const units=gn('opUnits'), nav=gn('opNav'); qtyForLedger=units; priceForLedger=nav;
+      DATA.funds=DATA.funds||[];
+      let pos=DATA.funds.find(x=>x.id.toLowerCase()===inst.toLowerCase()&&x.account===acct);
+      if(pos){ if(type==='Buy'){const nu=pos.units+units; pos.cost_nav=nu?(pos.units*(pos.cost_nav||pos.nav)+units*nav)/nu:nav; pos.units=nu;} else pos.units=Math.max(0,pos.units-units); if(nav)pos.nav=nav; }
+      else if(type==='Buy'){ DATA.funds.push({id:inst,isin:gv('opISIN'),name:gv('opName')||inst,account:acct,fund_type:gv('opFundType')||'Mutual Fund',units,nav,cost_nav:nav,nav_soy:nav,ccy,sector:'Fund',country:ccyCountry(ccy)}); }
+    } else if(cls_==='Bonds Intl'||cls_==='Bonds ARG'){
+      const list=cls_==='Bonds Intl'?DATA.bonds_intl:DATA.bonds_arg;
+      const face=gn('opFace'), pricePct=gn('opPrice'); qtyForLedger=face; priceForLedger=pricePct;
+      let pos=list.find(x=>x.id.toLowerCase()===inst.toLowerCase()&&x.account===acct);
+      if(pos){ if(type==='Buy') pos.face+=face; else pos.face=Math.max(0,pos.face-face); if(pricePct)pos.price_pct=pricePct; }
+      else if(type==='Buy'){ list.push({id:inst,isin:gv('opISIN'),name:gv('opName')||inst,account:acct,face,coupon_pct:gn('opCoupon'),freq_per_yr:gn('opFreq')||2,price_pct:pricePct,cost_pct:pricePct,price_pct_soy:pricePct,ccy,last_coupon:gv('opLast')||tdy,next_coupon:gv('opNext')||in6mo(),maturity:gv('opMaturity')||in5yr()}); }
+    } else if(cls_==='Structured'){
+      const notional=gn('opNotional'); qtyForLedger=1; priceForLedger=gn('opCost')||100;
+      let pos=DATA.structured.find(x=>x.id.toLowerCase()===inst.toLowerCase()&&x.account===acct);
+      if(!pos && type==='Buy'){ DATA.structured.push({id:inst,isin:gv('opISIN'),name:gv('opName')||inst,account:acct,notional,cost_pct:gn('opCost')||100,mark_pct:gn('opMark')||gn('opCost')||100,accrual_pct:gn('opAccrual'),freq_per_yr:gn('opFreq')||4,ccy,issue_date:gv('opIssue')||tdy,last_coupon:gv('opLast')||tdy,next_coupon:gv('opNext')||in6mo(),maturity:gv('opMaturity')||in5yr()}); }
+      else if(pos){ if(type==='Buy') pos.notional+=notional; else pos.notional=Math.max(0,pos.notional-notional); }
+    } else if(cls_==='Options'){
+      const contracts=gn('opContracts'), price=gn('opPrice'); qtyForLedger=Math.abs(contracts); priceForLedger=price;
+      let pos=DATA.options.find(x=>x.id.toLowerCase()===inst.toLowerCase()&&x.account===acct);
+      if(!pos && type==='Buy'){ DATA.options.push({id:inst,underlying:gv('opUnd')||inst,underlying_isin:gv('opISIN'),account:acct,type:gv('opOptType')||'Call',strike:gn('opStrike'),expiry:gv('opExpiry')||in6mo(),contracts,multiplier:gn('opMult')||100,entry_premium:price,price,ccy}); }
+      else if(pos){ pos.contracts += (type==='Buy'?contracts:-contracts); if(price)pos.price=price; }
+    } else if(cls_==='Futures'){
+      const q=gn('opFQty'); qtyForLedger=Math.abs(q); priceForLedger=gn('opPrice');
+      if(type==='Buy'){ DATA.futures.push({id:inst,name:gv('opName')||inst,underlying_isin:'',account:acct,qty:q,entry_price:gn('opEntry')||gn('opPrice'),price:gn('opPrice'),multiplier:gn('opMult')||1,margin:gn('opMargin'),ccy}); }
+    }
+  } else if(type==='Loan Drawdown' || cls_==='Loans'){
+    const principal=gn('opPrincipal')||Math.abs(cash);
+    let pos=DATA.loans.find(x=>x.id.toLowerCase()===inst.toLowerCase()&&x.account===acct);
+    if(!pos){ DATA.loans.push({id:inst,account:acct,principal,rate_pct:gn('opRate'),ccy,start_date:gv('opStart')||tdy}); }
+    else pos.principal+=principal;
+  }
+  DATA.ledger.push({date,type,asset_class:cls_,account:acct,instrument:inst||(ccy+' Cash'),ccy,
+    qty:qtyForLedger||undefined,price:priceForLedger||undefined,cash_flow:cash});
+  saveLocal(true);
+  toast(`${type} · ${cls_}: ${note||ccy+' cash'} ${cash>=0?'+':''}${fmtNum(cash,2)} ${ccy}`);
+  render();
+}
+function download(name,text,type){
+  const blob=new Blob([text],{type:type||'text/plain'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+function exportJSON(){ download('portfolio_data.json', JSON.stringify(DATA,null,2), 'application/json'); }
+function exportLedgerCSV(){
+  const hdr=['date','type','asset_class','instrument','ccy','cash_flow'];
+  const lines=[hdr.join(',')].concat(DATA.ledger.map(t=>hdr.map(h=>{
+    const v=t[h]==null?'':(''+t[h]); return /[,"]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; }).join(',')));
+  download('ledger.csv', lines.join('\n'), 'text/csv');
+}
+function saveLocal(silent){ try{ localStorage.setItem(LS_KEY, JSON.stringify(DATA)); if(!silent) toast('Saved to this browser.'); }catch(e){ if(!silent) toast('Browser storage unavailable — use Export instead.'); } }
+function loadLocal(){ try{ const s=localStorage.getItem(LS_KEY); if(s){ DATA=JSON.parse(s); toast('Loaded saved data from this browser.'); render(); } else toast('No saved data in this browser.'); }catch(e){ toast('Could not read browser storage.'); } }
+function resetData(){ DATA=JSON.parse(JSON.stringify(ORIGINAL_DATA)); try{localStorage.removeItem(LS_KEY);}catch(e){} toast('Reset to original sample data.'); render(); }
+function toast(msg){
+  let t=document.getElementById('toast');
+  if(!t){ t=document.createElement('div'); t.id='toast'; t.style.cssText='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--accent);color:var(--surface);padding:10px 18px;border-radius:10px;font-size:13px;font-weight:600;z-index:99;box-shadow:0 4px 16px rgba(0,0,0,.2)'; document.body.appendChild(t); }
+  t.textContent=msg; t.style.opacity='1'; clearTimeout(window.__tt); window.__tt=setTimeout(()=>{t.style.opacity='0';t.style.transition='opacity .5s';},2200);
+}
+/* ---- edit / correct an existing position ---- */
+function allPositions(){
+  const out=[]; const key=o=>o.ticker||o.id;
+  const push=(arr,cls)=>arr&&arr.forEach((o,i)=>out.push({cls,arr,i,label:`${key(o)} · ${cls} · ${o.account||''}`}));
+  push(DATA.equities_global,'Equities Global'); push(DATA.equities_arg,'Equities ARG');
+  push(DATA.funds,'Funds'); push(DATA.bonds_intl,'Bonds Intl'); push(DATA.bonds_arg,'Bonds ARG');
+  push(DATA.structured,'Structured'); push(DATA.options,'Options'); push(DATA.futures,'Futures'); push(DATA.loans,'Loans');
+  return out;
+}
+const _EQF=[['ticker','Ticker','text'],['name','Name','text'],['isin','ISIN','text'],['sector','Sector','text'],['country','Country','text'],['account','Account','acct'],['qty','Quantity','number'],['avg_cost','Avg cost','number'],['price','Price','number'],['price_soy','Start-of-yr price','number'],['ccy','Currency','ccy']];
+const _BDF=[['id','Bond ID','text'],['name','Name','text'],['isin','ISIN','text'],['account','Account','acct'],['face','Face','number'],['coupon_pct','Coupon %','number'],['freq_per_yr','Coupons/yr','number'],['price_pct','Price %','number'],['cost_pct','Cost %','number'],['price_pct_soy','SoY %','number'],['ccy','Currency','ccy'],['last_coupon','Last coupon','date'],['next_coupon','Next coupon','date'],['maturity','Maturity','date'],['sector','Sector','text'],['country','Country','text']];
+const EDIT_FIELDS={
+  'Equities Global':_EQF,'Equities ARG':_EQF,
+  'Funds':[['id','Fund ID','text'],['name','Name','text'],['isin','ISIN','text'],['fund_type','Type','fundtype'],['account','Account','acct'],['units','Units','number'],['nav','NAV','number'],['cost_nav','Cost NAV','number'],['nav_soy','SoY NAV','number'],['ccy','Currency','ccy'],['sector','Sector','text'],['country','Country','text']],
+  'Bonds Intl':_BDF,'Bonds ARG':_BDF,
+  'Structured':[['id','ID','text'],['name','Name','text'],['isin','ISIN','text'],['account','Account','acct'],['notional','Notional','number'],['cost_pct','Cost %','number'],['mark_pct','Mark %','number'],['accrual_pct','Accrual %','number'],['freq_per_yr','Coupons/yr','number'],['ccy','Currency','ccy'],['issue_date','Issue','date'],['last_coupon','Last coupon','date'],['next_coupon','Next coupon','date'],['maturity','Maturity','date']],
+  'Options':[['id','ID','text'],['underlying','Underlying','text'],['account','Account','acct'],['type','Type','opttype'],['strike','Strike','number'],['expiry','Expiry','date'],['contracts','Contracts','number'],['multiplier','Multiplier','number'],['entry_premium','Entry premium','number'],['price','Price','number'],['spot','Spot','number'],['iv','Impl. vol','number'],['ccy','Currency','ccy']],
+  'Futures':[['id','ID','text'],['name','Name','text'],['account','Account','acct'],['qty','Qty','number'],['entry_price','Entry','number'],['price','Price','number'],['multiplier','Multiplier','number'],['margin','Margin','number'],['ccy','Currency','ccy']],
+  'Loans':[['id','ID','text'],['account','Account','acct'],['principal','Principal','number'],['rate_pct','Rate %','number'],['ccy','Currency','ccy'],['start_date','Start date','date']]
+};
+function editFieldHTML(k,label,t,val){
+  val = val==null?'':val;
+  const sel=(opts)=>`<div><label>${label}</label><select id="ed_${k}">${opts.map(o=>`<option${(''+o)===(''+val)?' selected':''}>${o}</option>`).join('')}</select></div>`;
+  if(t==='acct') return sel((DATA.accounts||[]).map(a=>a.id));
+  if(t==='ccy') return sel(['USD','EUR','ARS']);
+  if(t==='opttype') return sel(['Call','Put']);
+  if(t==='fundtype') return sel(['ETF','Mutual Fund','Money Market FCI','Hedge Fund','Private Equity','Real Estate']);
+  const it = t==='date'?'date':t==='number'?'number':'text';
+  return `<div><label>${label}</label><input id="ed_${k}" type="${it}" ${it==='number'?'step="any"':''} value="${(''+val).replace(/"/g,'&quot;')}"></div>`;
+}
+function editSelect(){
+  const v=document.getElementById('editSel').value, box=document.getElementById('editFields');
+  const acts=document.getElementById('editActions');
+  if(v===''){ box.innerHTML=''; acts.style.display='none'; return; }
+  const pos=window.__positions[+v], obj=pos.arr[pos.i];
+  box.innerHTML=(EDIT_FIELDS[pos.cls]||[]).map(([k,l,t])=>editFieldHTML(k,l,t,obj[k])).join('');
+  acts.style.display='flex';
+}
+function saveEdit(){
+  const v=document.getElementById('editSel').value; if(v==='') return;
+  const pos=window.__positions[+v], obj=pos.arr[pos.i];
+  (EDIT_FIELDS[pos.cls]||[]).forEach(([k,l,t])=>{ const el=document.getElementById('ed_'+k); if(!el) return;
+    let val=el.value; if(t==='number'){ val=parseFloat(val); if(isNaN(val)) val=0; } obj[k]=val; });
+  saveLocal(true); toast('Updated '+(obj.ticker||obj.id)); render();
+}
+function deleteEdit(){
+  const v=document.getElementById('editSel').value; if(v==='') return;
+  const pos=window.__positions[+v], nm=pos.arr[pos.i].ticker||pos.arr[pos.i].id;
+  if(!confirm('Delete position "'+nm+'"? Its past ledger entries are kept; only the current holding is removed.')) return;
+  pos.arr.splice(pos.i,1); saveLocal(true); toast('Deleted '+nm); render();
+}
+function viewOperations(m){
+  const insts=allInstruments().map(n=>`<option value="${n}">`).join('');
+  window.__positions=allPositions();
+  const posOpts='<option value="">— pick a position to correct —</option>'+
+    window.__positions.map((p,i)=>`<option value="${i}">${p.label}</option>`).join('');
+  const td=today().toISOString().slice(0,10);
+  const initClass='Equities Global';
+  const initFields=(OP_SPEC[initClass]||[]).map(opFieldHTML).join('');
+  const recent=ledgerRows().reverse().slice(0,8).map(t=>`<tr><td>${t.date}</td><td>${t.type}</td><td><span class="tag">${t.account||''}</span></td><td>${t.instrument}</td>
+    <td>${t.ccy}</td><td class="${cls(t.cash_flow)}">${fmtNum(t.cash_flow,t.ccy==='ARS'?0:2)}</td></tr>`).join('');
+  return `<div class="card"><h3>Add a position / record an operation <span class="hint">pick a product type — the form adapts. New instruments (e.g. FOUR, a new bond, a structured note) are created on Buy.</span></h3>
+    <div class="ops">
+      <div><label>Date</label><input type="date" id="opDate" value="${td}"></div>
+      <div><label>Type</label><select id="opType" onchange="opAutofill()">
+        ${['Buy','Sell','Deposit','Withdrawal','Coupon','Dividend','Loan Drawdown','Fee'].map(x=>`<option>${x}</option>`).join('')}</select></div>
+      <div><label>Account</label><select id="opAcct">
+        ${(DATA.accounts||[]).map(a=>`<option value="${a.id}"${a.id===state.account?' selected':''}>${a.name}</option>`).join('')}</select></div>
+      <div><label>Product type</label><select id="opClass" onchange="renderOpFields()">
+        ${['Equities Global','Equities ARG','Funds','Bonds Intl','Bonds ARG','Structured','Options','Futures','Loans','Cash'].map(x=>`<option${x===initClass?' selected':''}>${x}</option>`).join('')}</select></div>
+      <div><label>Currency</label><select id="opCcy" onchange="this.dataset.touched=1">${['USD','EUR','ARS'].map(x=>`<option>${x}</option>`).join('')}</select></div>
+    </div>
+    <datalist id="instList">${insts}</datalist>
+    <div class="ops" id="opFields" style="margin-top:10px">${initFields}</div>
+    <div class="ops" style="margin-top:10px"><div><label>Cash flow (auto — editable)</label>
+      <input id="opCash" type="number" step="any" placeholder="signed amount" oninput="this.dataset.touched=1"></div></div>
+    <div class="row-actions">
+      <button class="btn primary" onclick="addOperation()">+ Add</button>
+      <button class="btn" onclick="exportJSON()">⭳ Export data (JSON)</button>
+      <button class="btn" onclick="exportLedgerCSV()">⭳ Export ledger (CSV)</button>
+      <button class="btn ghost" onclick="saveLocal(false)">Save to browser</button>
+      <button class="btn ghost" onclick="loadLocal()">Load</button>
+      <button class="btn ghost" onclick="resetData()">Reset</button>
+    </div>
+    <div class="note">The form shows the fields each product needs — equities: qty & price; bonds: face, coupon, maturity…; structured: notional, accrual, cost/mark, coupon dates (fully customizable); options: strike, expiry, contracts; futures: entry, multiplier, margin. On <b>Buy</b> a new instrument is created in the chosen account; buying more of an existing one averages the cost. Same ticker in two accounts stays as two positions (each with its own cost basis). Cash flow auto-fills but you can override. Changes live in this browser — use <b>Export</b> to push back to Excel, or <b>Save to browser</b> to keep them here.</div>
+  </div>
+  <div class="card"><h3>Edit / correct a position <span class="hint">fix a wrong price, ISIN, coupon, account — any field — or delete a position</span></h3>
+    <div class="ops"><div style="grid-column:1/-1;max-width:460px"><label>Position</label>
+      <select id="editSel" onchange="editSelect()">${posOpts}</select></div></div>
+    <div class="ops" id="editFields" style="margin-top:10px"></div>
+    <div class="row-actions" id="editActions" style="display:none">
+      <button class="btn primary" onclick="saveEdit()">Save changes</button>
+      <button class="btn ghost" onclick="deleteEdit()" style="color:var(--bad);border-color:var(--bad)">Delete position</button>
+    </div>
+    <div class="note">This edits the position directly (no ledger entry) — for genuine corrections. To record a real buy/sell that moves cash, use the form above instead. Remember to <b>Export</b> or <b>Save to browser</b> afterwards.</div>
+  </div>
+  <div class="card"><h3>Recent operations</h3>
+    ${tableFor(['Date','Type','Account','Instrument','Ccy','Cash flow'],recent.split('</tr>').filter(Boolean).map(r=>r+'</tr>'))}</div>`;
+}
+
+/* ---------------- Accounts (by bank / broker) ---------------- */
+function accountBreakdown(){
+  const saved=state.account; const out=[];
+  (DATA.accounts||[]).forEach(a=>{
+    state.account=a.id; const m=buildModel();
+    out.push({id:a.id, name:a.name, type:a.type, net:m.net, gross:m.gross, liab:m.liab,
+      classMap:Object.fromEntries(m.classes), cashUsd:m.ch.tot});
+  });
+  state.account=saved;
+  return out;
+}
+const CLASS_ORDER=[['Global Equities','--s1'],['Argentine Equities','--s2'],['Funds','--s9'],['International Bonds','--s3'],
+  ['Argentine Bonds','--s4'],['Structured Products','--s5'],['Options','--s6'],['Futures','--s7'],['Cash','--s8']];
+function viewAccounts(m){
+  const rows=accountBreakdown().filter(a=>Math.abs(a.gross)>0.01||Math.abs(a.liab)>0.01);
+  const totalNet=rows.reduce((s,a)=>s+a.net,0);
+  rows.sort((a,b)=>b.net-a.net);
+  const maxNet=Math.max(...rows.map(a=>Math.abs(a.net)),1);
+  const bars=rows.map(a=>`<div class="barrow"><span>${a.name} <span class="tag">${a.type}</span></span>
+    <div class="bartrack"><div class="barfill" style="width:${Math.abs(a.net)/maxNet*100}%;background:var(--s1)"></div></div>
+    <span style="text-align:right">${fmt(a.net)}</span></div>`).join('');
+  // matrix: rows = accounts, cols = asset classes + Loans + Net
+  const head=['Account'].concat(CLASS_ORDER.map(c=>c[0].replace(' Products','').replace('International','Intl').replace('Argentine','ARG').replace(' Equities',' Eq'))).concat(['Loans','NET']);
+  const mrows=rows.map(a=>{
+    const cells=CLASS_ORDER.map(c=>{ const v=a.classMap[c[0]]||0; return `<td>${Math.abs(v)>0.01?fmt(v):'<span class="muted">–</span>'}</td>`;}).join('');
+    return `<tr><td><b>${a.name}</b></td>${cells}<td class="${a.liab?'neg':''}">${a.liab?('-'+fmt(a.liab)):'<span class="muted">–</span>'}</td><td><b>${fmt(a.net)}</b></td></tr>`;
+  }).join('');
+  // totals row
+  const totCells=CLASS_ORDER.map(c=>{ const v=rows.reduce((s,a)=>s+(a.classMap[c[0]]||0),0); return `<td>${Math.abs(v)>0.01?fmt(v):'–'}</td>`;}).join('');
+  const totLiab=rows.reduce((s,a)=>s+a.liab,0);
+  const foot=`<td>All accounts</td>${totCells}<td class="${totLiab?'neg':''}">${totLiab?('-'+fmt(totLiab)):'–'}</td><td>${fmt(totalNet)}</td>`;
+  const biggest=rows[0];
+  return `<div class="kpis">
+    <div class="kpi"><div class="lbl">Total Net Worth</div><div class="val">${fmt(totalNet)}</div><div class="sub2">${rows.length} accounts</div></div>
+    <div class="kpi"><div class="lbl">Largest account</div><div class="val" style="font-size:18px">${biggest.name}</div><div class="sub2">${fmt(biggest.net)} · ${pct(biggest.net/totalNet)}</div></div>
+    <div class="kpi"><div class="lbl">Brokers / Banks</div><div class="val">${rows.filter(a=>a.type==='Broker').length} / ${rows.filter(a=>a.type==='Bank').length}</div></div>
+    <div class="kpi"><div class="lbl">Viewing</div><div class="val" style="font-size:18px">${state.account==='ALL'?'All accounts':ACCT_NAME(state.account)}</div><div class="sub2">use the header filter to drill in</div></div>
+  </div>
+  <div class="grid2">
+    <div class="card"><h3>Net worth by account</h3>${bars}
+      <div class="note">Tip: pick an account in the header dropdown to filter every tab to just that bank/broker.</div></div>
+    <div class="card"><h3>Account types</h3>
+      ${tableFor(['Account','Type','Gross assets','Loans','Net worth'],
+        rows.map(a=>`<tr><td>${a.name}</td><td><span class="pill">${a.type}</span></td><td>${fmt(a.gross)}</td>
+          <td class="${a.liab?'neg':''}">${a.liab?('-'+fmt(a.liab)):'–'}</td><td><b>${fmt(a.net)}</b></td></tr>`),
+        `<td>Total</td><td></td><td></td><td></td><td>${fmt(totalNet)}</td>`)}
+    </div>
+  </div>
+  <div class="card"><h3>Holdings by account × asset class <span class="hint">market value in ${state.ccy}</span></h3>
+    <div class="tblwrap"><table><thead><tr>${head.map(h=>`<th>${h}</th>`).join('')}</tr></thead>
+      <tbody>${mrows}</tbody><tfoot><tr>${foot}</tr></tfoot></table></div>
+    <div class="note">Every position carries an account tag; add or move positions per account in the Operations tab.</div>
+  </div>`;
+}
+
+/* ---------------- Alerts ---------------- */
+const SEV_COLOR={crit:'--bad',warn:'--s4',good:'--good',info:'--s1'};
+function alertsCard(){
+  const al=alertsList(); if(!al.length) return '';
+  const items=al.slice(0,8).map(a=>`<div style="display:flex;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid var(--grid)">
+    <span class="dot" style="background:var(${SEV_COLOR[a.sev]})"></span><span class="pill">${a.tag}</span>
+    <span style="font-size:13px">${a.text}</span></div>`).join('');
+  const more=al.length>8?`<div class="note">+${al.length-8} more — see the Risk tab and the connector's alert digest.</div>`:'';
+  return `<div class="card" style="margin-bottom:18px"><h3>Alerts <span class="hint">${al.length} active · coupons, expiries, maturities, big moves, loan interest</span></h3>${items}${more}</div>`;
+}
+
+/* ---------------- Income (forward calendar + maturity ladder) ---------------- */
+function viewIncome(m){
+  const inc=projectIncome(12), months=incomeByMonth();
+  const total12=months.reduce((s,x)=>s+x.total,0);
+  const maxM=Math.max(...months.map(x=>x.total),1);
+  const bars=months.map(mo=>`<div class="barrow" style="grid-template-columns:74px 1fr 100px">
+    <span>${mo.key}</span><div class="bartrack"><div class="barfill" style="width:${mo.total/maxM*100}%;background:var(--s3)"></div></div>
+    <span style="text-align:right">${fmt(mo.total)}</span></div>`).join('') || '<div class="muted">No projected income in the selected slice.</div>';
+  const upcoming=inc.slice(0,16).map(e=>`<tr><td>${e.date}</td><td>${e.instrument} <span class="tag">${e.account}</span></td><td>${e.type}</td><td>${fmt(e.amountU)}</td></tr>`).join('')
+    || '<tr><td colspan="4" class="muted">—</td></tr>';
+  const lad=maturityLadder(); const maxY=Math.max(...lad.byYear.map(y=>y.total),1);
+  const ladBars=lad.byYear.map(y=>`<div class="barrow" style="grid-template-columns:56px 1fr 110px">
+    <span>${y.year}</span><div class="bartrack"><div class="barfill" style="width:${y.total/maxY*100}%;background:var(--s4)"></div></div>
+    <span style="text-align:right">${fmt(y.total)}</span></div>`).join('') || '<div class="muted">No maturities in the selected slice.</div>';
+  const ladRows=lad.items.slice().sort((a,b)=> (a.mat||'')<(b.mat||'')?-1:1).map(it=>`<tr><td>${it.name} <span class="tag">${it.type}</span></td><td>${it.account}</td><td>${it.mat}</td><td>${fmt(it.principalU)}</td></tr>`).join('')
+    || '<tr><td colspan="4" class="muted">—</td></tr>';
+  const yr=new Date(today()).getUTCFullYear();
+  const near=lad.byYear.filter(y=>+y.year<=yr+2).reduce((s,y)=>s+y.total,0);
+  return `<div class="kpis">
+    <div class="kpi"><div class="lbl">Projected income · 12 mo</div><div class="val pos">${fmt(total12)}</div><div class="sub2">coupons + notes + dividends</div></div>
+    <div class="kpi"><div class="lbl">Next payment</div><div class="val" style="font-size:15px">${inc[0]?fmt(inc[0].amountU):'—'}</div><div class="sub2">${inc[0]?inc[0].instrument+' · '+inc[0].date:'none scheduled'}</div></div>
+    <div class="kpi"><div class="lbl">Principal maturing ≤ ${yr+2}</div><div class="val">${fmt(near)}</div><div class="sub2">bonds + notes redeeming</div></div>
+    <div class="kpi"><div class="lbl">Payments scheduled</div><div class="val">${inc.length}</div><div class="sub2">next 12 months</div></div>
+  </div>
+  <div class="grid2">
+    <div class="card"><h3>Income calendar <span class="hint">expected cash in, next 12 months, ${state.ccy}</span></h3>${bars}
+      <div class="note">Coupons projected from each instrument's next-coupon date & frequency to maturity; equity dividends from the declared per-share rate.</div></div>
+    <div class="card"><h3>Maturity ladder <span class="hint">principal returning by year, ${state.ccy}</span></h3>${ladBars}
+      <div class="note">When bonds & structured notes redeem — plan reinvestment around these.</div></div>
+  </div>
+  <div class="grid2">
+    <div class="card"><h3>Upcoming payments <span class="hint">next 16</span></h3>${tableFor(['Date','Instrument','Type','Amount'],upcoming.split('</tr>').filter(Boolean).map(r=>r+'</tr>'))}</div>
+    <div class="card"><h3>Maturities</h3>${tableFor(['Instrument','Account','Maturity','Principal'],ladRows.split('</tr>').filter(Boolean).map(r=>r+'</tr>'))}</div>
+  </div>`;
+}
+
+/* ---------------- Risk (metrics, concentration, exposures, derivatives) ---------------- */
+function expoBars(groups, nw, palette){
+  const max=Math.max(...groups.map(x=>Math.abs(x.v)),1);
+  return groups.map((x,i)=>`<div class="barrow" style="grid-template-columns:150px 1fr 108px">
+    <span>${x.k}</span><div class="bartrack"><div class="barfill" style="width:${Math.abs(x.v)/max*100}%;background:var(${palette[i%palette.length]})"></div></div>
+    <span style="text-align:right">${fmt(x.v)} · ${((x.v/nw)*100).toFixed(0)}%</span></div>`).join('');
+}
+function viewRisk(m){
+  const r=riskMetrics(), con=concentration(), g=portfolioGreeks();
+  const nw=m.net||1;
+  const fx=exposureBy('ccy'), sec=exposureBy('sector'), ctry=exposureBy('country');
+  const h=holdings();
+  const grossLong=h.filter(x=>x.expU>0).reduce((s,x)=>s+x.expU,0);
+  const grossShort=h.filter(x=>x.expU<0).reduce((s,x)=>s+x.expU,0);
+  const grossExp=grossLong-grossShort, netExp=grossLong+grossShort;
+  const PAL=['--s1','--s2','--s3','--s4','--s5','--s6','--s7','--s8'];
+  const conRows=con.rows.slice(0,10).map(x=>`<tr><td>${x.name} <span class="tag">${x.cls}</span> <span class="tag">${x.account}</span></td>
+    <td>${fmt(x.mvU)}</td><td>${(x.w*100).toFixed(1)}%</td></tr>`).join('');
+  const grk=g.rows.map(o=>`<tr><td>${o.id} <span class="tag">${o.account}</span></td><td>${o.g.delta.toFixed(2)}</td>
+    <td>${fmtNum(o.deltaSh,0)}</td><td>${fmt(o.deltaUSD)}</td><td>${fmt(o.thetaUSD)}</td><td>${fmt(o.vegaUSD)}</td></tr>`).join('')
+    || '<tr><td colspan="6" class="muted">No option positions in this slice.</td></tr>';
+  const rf2=v=>isFinite(v)?v.toFixed(2):'∞';
+  const smoothNote = r.smooth ? `<div class="note" style="margin-bottom:14px">Risk metrics use the net-worth snapshot history, which in this template is a smooth synthetic series — so volatility looks low and drawdown is zero. They become meaningful once the connector logs real (noisier) snapshots over time.</div>` : '';
+  return `${smoothNote}<div class="kpis">
+    <div class="kpi"><div class="lbl">Volatility (ann.)</div><div class="val">${(r.volAnn*100).toFixed(1)}%</div><div class="sub2">of net worth</div></div>
+    <div class="kpi"><div class="lbl">Max drawdown</div><div class="val neg">${(r.maxDD*100).toFixed(1)}%</div></div>
+    <div class="kpi"><div class="lbl">Sharpe / Sortino</div><div class="val">${rf2(r.sharpe)} / ${rf2(r.sortino)}</div><div class="sub2">vs ${(RF()*100).toFixed(1)}% risk-free</div></div>
+    <div class="kpi"><div class="lbl">Gross exposure</div><div class="val">${(grossExp/nw*100).toFixed(0)}%</div><div class="sub2">of net worth · net ${(netExp/nw*100).toFixed(0)}%</div></div>
+  </div>
+  <div class="grid2">
+    <div class="card"><h3>Concentration <span class="hint">largest positions, share of holdings</span></h3>
+      ${tableFor(['Position','Market value','Weight'],conRows.split('</tr>').filter(Boolean).map(r=>r+'</tr>'))}
+      <div class="note">Top holding ${(con.top1*100).toFixed(0)}% · Top 5 ${(con.top5*100).toFixed(0)}% · HHI ${(con.hhi*10000).toFixed(0)} · effective # of positions ≈ ${con.effN.toFixed(1)}.</div></div>
+    <div class="card"><h3>Currency exposure <span class="hint">economic exposure by currency, % of net worth</span></h3>
+      ${expoBars(fx,nw,PAL)}
+      <div class="note">Note: a USD-denominated Argentine bond counts as USD exposure, not ARS — this is real currency risk, not just where it trades.</div></div>
+  </div>
+  <div class="grid2">
+    <div class="card"><h3>Sector exposure <span class="hint">% of net worth</span></h3>${expoBars(sec,nw,PAL)}</div>
+    <div class="card"><h3>Country exposure <span class="hint">% of net worth</span></h3>${expoBars(ctry,nw,PAL)}</div>
+  </div>
+  <div class="grid2">
+    <div class="card"><h3>Options — portfolio Greeks <span class="hint">Black-Scholes, aggregated</span></h3>
+      <div class="kpis" style="grid-template-columns:repeat(4,1fr);margin-bottom:12px">
+        <div class="kpi"><div class="lbl">Delta ($)</div><div class="val" style="font-size:18px">${fmt(g.deltaUSD)}</div><div class="sub2">≈ ${fmtNum(g.deltaUSD/nw*100,1)}% NW</div></div>
+        <div class="kpi"><div class="lbl">Theta ($/day)</div><div class="val ${cls(g.thetaUSD)}" style="font-size:18px">${fmt(g.thetaUSD)}</div></div>
+        <div class="kpi"><div class="lbl">Vega ($/vol)</div><div class="val" style="font-size:18px">${fmt(g.vegaUSD)}</div></div>
+        <div class="kpi"><div class="lbl">Gamma ($)</div><div class="val" style="font-size:18px">${fmt(g.gammaUSD)}</div></div>
+      </div>
+      ${tableFor(['Option','Delta','Δ shares','Δ $','Theta/day','Vega'],grk.split('</tr>').filter(Boolean).map(r=>r+'</tr>'))}
+      <div class="note">Delta $ = directional exposure (like holding that many $ of the underlying). Theta = daily time decay. Uses each option's spot & implied-vol inputs.</div></div>
+    <div class="card"><h3>Exposure & leverage</h3>
+      <div class="barrow" style="grid-template-columns:1fr auto"><span class="muted">Gross long exposure</span><b>${fmt(grossLong)}</b></div>
+      <div class="barrow" style="grid-template-columns:1fr auto"><span class="muted">Gross short exposure</span><b>${fmt(grossShort)}</b></div>
+      <div class="barrow" style="grid-template-columns:1fr auto"><span class="muted">Net exposure</span><b>${fmt(netExp)} · ${(netExp/nw*100).toFixed(0)}% NW</b></div>
+      <div class="barrow" style="grid-template-columns:1fr auto"><span class="muted">Gross exposure / net worth</span><b>${(grossExp/nw).toFixed(2)}×</b></div>
+      <div class="barrow" style="grid-template-columns:1fr auto"><span class="muted">Loans (leverage)</span><b class="neg">${fmt(-m.liab)}</b></div>
+      <div class="note">Gross exposure includes delta-adjusted options and futures notional. >1.0× means you control more market exposure than your net worth — leverage from derivatives and the margin loan.</div></div>
+  </div>`;
+}
+
+function render(){
+  const m=buildModel();
+  document.getElementById('asof').textContent =
+    `As of ${today().toISOString().slice(0,10)} · ${state.ccy} · ARS: ${state.arsRate.toUpperCase()} (${fmtNum(state.fx.ars_rates[state.arsRate])}/USD) · account: ${state.account==='ALL'?'All':ACCT_NAME(state.account)}`;
+  renderTabs();
+  let html='';
+  if(activeTab==='master') html=viewMaster(m);
+  else if(activeTab==='accounts') html=viewAccounts(m);
+  else if(activeTab==='analysis') html=viewAnalysis(m);
+  else if(activeTab==='pnl') html=viewPnL(m);
+  else if(activeTab==='income') html=viewIncome(m);
+  else if(activeTab==='risk') html=viewRisk(m);
+  else if(activeTab==='operations') html=viewOperations(m);
+  else if(activeTab==='eqGlobal') html=viewEquities(m.eg,'Global Equities');
+  else if(activeTab==='eqArg') html=viewEquities(m.ea,'Argentine Equities (ARS)');
+  else if(activeTab==='bondsIntl') html=viewBonds(m.bi,'International Bonds','US Treasuries & corporates');
+  else if(activeTab==='bondsArg') html=viewBonds(m.ba,'Argentine Bonds','hard-dollar (GD30/AL30) & CER/ARS');
+  else if(activeTab==='funds') html=viewFunds(m.fn);
+  else if(activeTab==='structured') html=viewStructured(m.st);
+  else if(activeTab==='options') html=viewOptions(m.op);
+  else if(activeTab==='futures') html=viewFutures(m.fu);
+  else if(activeTab==='loans') html=viewLoans(m.ln);
+  else if(activeTab==='cash') html=viewCash(m.ch);
+  else if(activeTab==='ledger') html=viewLedger();
+  document.getElementById('views').innerHTML=`<div class="view active">${html}</div>`;
+  if(activeTab==='analysis') computeRange();
+  renderFxBar();
+}
+
+function renderFxBar(){
+  const f=state.fx, ars=f.ars_rates;
+  const color = state.fxSource==='live' ? 'var(--good)' : 'var(--muted)';
+  document.getElementById('fxbar').innerHTML=
+    `<span><span class="dot" style="background:${color}"></span><b>FX ${state.fxSource==='live'?'LIVE':'seed'}</b> · ${state.fxDate}</span>`+
+    `<span>EUR/USD <b>${f.EUR_per_USD.toFixed(4)}</b></span>`+
+    `<span>Oficial <b>${fmtNum(ars.oficial)}</b></span>`+
+    `<span>MEP <b>${fmtNum(ars.mep)}</b></span>`+
+    `<span>CCL <b>${fmtNum(ars.ccl)}</b></span>`+
+    `<span>Blue <b>${fmtNum(ars.blue)}</b></span>`+
+    `<span class="muted">ARS/USD in use: <b>${fmtNum(ars[state.arsRate])}</b></span>`;
+}
+
+/* ---------------- live FX ---------------- */
+async function refreshFX(){
+  const btn=document.getElementById('refreshBtn'); btn.textContent='↻ …'; btn.disabled=true;
+  let ok=false;
+  try{
+    const r=await fetch('https://dolarapi.com/v1/dolares',{cache:'no-store'});
+    if(r.ok){
+      const arr=await r.json();
+      const map={oficial:'oficial',blue:'blue',bolsa:'mep',contadoconliqui:'ccl',mayorista:'mayorista'};
+      arr.forEach(d=>{ if(map[d.casa] && d.venta) state.fx.ars_rates[map[d.casa]]=d.venta; });
+      ok=true;
+    }
+  }catch(e){}
+  try{
+    const r2=await fetch('https://api.frankfurter.dev/v1/latest?base=USD&symbols=EUR,GBP',{cache:'no-store'});
+    if(r2.ok){ const j=await r2.json(); if(j.rates){ if(j.rates.EUR) state.fx.EUR_per_USD=j.rates.EUR; if(j.rates.GBP) state.fx.GBP_per_USD=j.rates.GBP; state.fxDate=j.date+' (live)'; } ok=true; }
+  }catch(e){}
+  state.fxSource = ok?'live':'seed';
+  if(ok && !state.fxDate.includes('live')) state.fxDate=today().toISOString().slice(0,10)+' (live)';
+  btn.textContent='↻ Refresh live FX'; btn.disabled=false;
+  render();
+}
+
+/* ---------------- events ---------------- */
+document.getElementById('ccySeg').addEventListener('click',e=>{
+  if(e.target.dataset.ccy){ state.ccy=e.target.dataset.ccy;
+    document.querySelectorAll('#ccySeg button').forEach(b=>b.classList.toggle('active',b.dataset.ccy===state.ccy));
+    render(); }
+});
+document.getElementById('arsSel').value=state.arsRate;
+document.getElementById('arsSel').addEventListener('change',e=>{state.arsRate=e.target.value;render();});
+// populate account filter
+(function(){
+  const sel=document.getElementById('acctSel');
+  sel.innerHTML='<option value="ALL">All accounts</option>'+
+    (DATA.accounts||[]).map(a=>`<option value="${a.id}">${a.name}</option>`).join('');
+  sel.value=state.account;
+  sel.addEventListener('change',e=>{state.account=e.target.value;render();});
+})();
+document.getElementById('refreshBtn').addEventListener('click',refreshFX);
+document.getElementById('themeBtn').addEventListener('click',()=>{
+  const h=document.documentElement; h.dataset.theme = h.dataset.theme==='dark'?'light':'dark'; render();
+});
+if(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
+  document.documentElement.dataset.theme='dark';
+
+document.getElementById('footnote').innerHTML=
+  'Live FX pulls from dolarapi.com (ARS: oficial/MEP/CCL/blue/mayorista) and frankfurter.dev (EUR/GBP) directly in your browser — no key needed. '+
+  'If a fetch is blocked, the dashboard falls back to the seeded rates shown. Instrument prices (equities, bonds, options, futures) are the template inputs — '+
+  'edit them in the Excel workbook, which is the data engine this view mirrors. This is sample data for you to replace with your real positions.';
+
+render();
+// attempt a live refresh on load (non-blocking)
+refreshFX();
+</script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+# === Investment dashboard — repo .gitignore ===
+# Only these should EVER be committed:
+#   code + templates  (secure_publish.py, refresh_prices.py, build_xlsx.py,
+#                       gen_history.py, dashboard_template.html, .github/…)
+#   portfolio.enc     (your data, but AES-256 encrypted — safe)
+#   index.html        (the passphrase-locked dashboard — safe)
+#
+# Everything below is PLAINTEXT and must stay off GitHub:
+
+dataset.json                 # your real positions, in the clear
+Investment_Dashboard.html    # plaintext dashboard the connector regenerates
+Investment_Master.xlsx       # plaintext Excel workbook
+credentials.env              # API keys / SMTP / Telegram / Twilio secrets
+.env
+_site/                       # transient Pages staging folder
+__pycache__/
+*.pyc
