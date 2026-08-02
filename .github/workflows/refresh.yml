@@ -1,0 +1,112 @@
+name: Refresh portfolio & publish
+
+# What this does, every run:
+#   1. Decrypt portfolio.enc  -> dataset.json      (uses your PORTFOLIO_PASSPHRASE secret)
+#   2. Pull live prices (FX, Argentine public API, global equities/ETFs, intl bonds)
+#   3. Re-encrypt the updated data -> portfolio.enc (snapshots accumulate here)
+#   4. Build the encrypted index.html
+#   5. Commit portfolio.enc + index.html back, delete every plaintext file
+#   6. Publish index.html to GitHub Pages
+#
+# Nothing sensitive is ever committed or published in the clear: only ciphertext
+# (portfolio.enc) and the passphrase-locked index.html leave this job.
+
+on:
+  schedule:
+    - cron: "0 12 * * 1-5"     # 12:00 UTC, Mon-Fri (≈ market hours). Edit to taste.
+  workflow_dispatch:            # lets you run it on demand from the Actions tab
+
+# GITHUB_TOKEN needs to push the updated files and deploy Pages
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+# Never let two runs publish at once
+concurrency:
+  group: portfolio-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install cryptography
+
+      - name: Decrypt store
+        env:
+          PORTFOLIO_PASSPHRASE: ${{ secrets.PORTFOLIO_PASSPHRASE }}
+        run: python secure_publish.py decrypt-store
+
+      - name: Refresh live prices (free sources only)
+        # IBKR / broker logins can't run in generic cloud CI, so we use the free
+        # public sources. Everything else keeps its last-known price.
+        run: python refresh_prices.py --sources fx,arg_public,global,intl
+        env:
+          FINNHUB_KEY: ${{ secrets.FINNHUB_KEY }}          # optional: intl bond quotes
+          # --- optional alert channels (leave unset to skip) ---
+          ALERT_SMTP_HOST: ${{ secrets.ALERT_SMTP_HOST }}
+          ALERT_SMTP_PORT: ${{ secrets.ALERT_SMTP_PORT }}
+          ALERT_SMTP_USER: ${{ secrets.ALERT_SMTP_USER }}
+          ALERT_SMTP_PASS: ${{ secrets.ALERT_SMTP_PASS }}
+          ALERT_TO: ${{ secrets.ALERT_TO }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TWILIO_SID: ${{ secrets.TWILIO_SID }}
+          TWILIO_TOKEN: ${{ secrets.TWILIO_TOKEN }}
+          TWILIO_WA_FROM: ${{ secrets.TWILIO_WA_FROM }}
+          TWILIO_WA_TO: ${{ secrets.TWILIO_WA_TO }}
+
+      - name: Re-encrypt store
+        env:
+          PORTFOLIO_PASSPHRASE: ${{ secrets.PORTFOLIO_PASSPHRASE }}
+        run: python secure_publish.py encrypt-store
+
+      - name: Build encrypted dashboard
+        env:
+          PORTFOLIO_PASSPHRASE: ${{ secrets.PORTFOLIO_PASSPHRASE }}
+        run: python secure_publish.py build
+
+      - name: Remove all plaintext artifacts
+        # Belt-and-suspenders: these are also in .gitignore, but delete them so
+        # they can never be committed or uploaded to Pages.
+        run: rm -f dataset.json Investment_Dashboard.html Investment_Master.xlsx
+
+      - name: Commit updated ciphertext + page
+        run: |
+          git config user.name  "portfolio-bot"
+          git config user.email "portfolio-bot@users.noreply.github.com"
+          git add portfolio.enc index.html
+          if git diff --cached --quiet; then
+            echo "nothing changed"
+          else
+            git commit -m "chore: scheduled refresh $(date -u +%Y-%m-%dT%H:%MZ)"
+            git push
+          fi
+
+      - name: Stage ONLY index.html for publishing
+        # Publish just the encrypted page — never the scripts or portfolio.enc.
+        run: |
+          mkdir -p _site
+          cp index.html _site/index.html
+
+      - name: Package the page for Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Deploy to GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@v4
