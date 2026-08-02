@@ -86,6 +86,7 @@ async function __unlock(e){
       base, {name:'AES-GCM', length:256}, false, ['decrypt']);
     const pt = await crypto.subtle.decrypt({name:'AES-GCM', iv:__b(__PAYLOAD.iv)}, key, __b(__PAYLOAD.ct));
     window.__DATA = JSON.parse(new TextDecoder().decode(pt));
+    window.__PASSPHRASE = pw;   // kept in memory only, so the dashboard can re-encrypt on "Save encrypted file"
     const s = document.createElement('script'); s.textContent = document.getElementById('__appcode').textContent;
     document.body.appendChild(s);
     const lock = document.getElementById('__lock'); if(lock) lock.remove();

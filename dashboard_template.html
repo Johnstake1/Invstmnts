@@ -1200,6 +1200,53 @@ function exportLedgerCSV(){
 function saveLocal(silent){ try{ localStorage.setItem(LS_KEY, JSON.stringify(DATA)); if(!silent) toast('Saved to this browser.'); }catch(e){ if(!silent) toast('Browser storage unavailable — use Export instead.'); } }
 function loadLocal(){ try{ const s=localStorage.getItem(LS_KEY); if(s){ DATA=JSON.parse(s); toast('Loaded saved data from this browser.'); render(); } else toast('No saved data in this browser.'); }catch(e){ toast('Could not read browser storage.'); } }
 function resetData(){ DATA=JSON.parse(JSON.stringify(ORIGINAL_DATA)); try{localStorage.removeItem(LS_KEY);}catch(e){} toast('Reset to original sample data.'); render(); }
+/* ---- accounts manager ---- */
+function acctRefs(id){ let n=0;
+  [DATA.equities_global,DATA.equities_arg,DATA.funds,DATA.bonds_intl,DATA.bonds_arg,DATA.structured,DATA.options,DATA.futures,DATA.loans,DATA.ledger]
+    .forEach(a=>(a||[]).forEach(o=>{ if(o.account===id) n++; })); return n; }
+function setAcct(i,field,val){ if(!DATA.accounts||!DATA.accounts[i])return; DATA.accounts[i][field]=(''+val).trim(); saveLocal(true); render(); }
+function addAccount(){
+  const name=(prompt('Name of the bank / broker (e.g. "Chase", "Schwab"):')||'').trim(); if(!name) return;
+  let base=name.replace(/[^A-Za-z0-9]/g,'')||'ACCT', id=base, k=2; DATA.accounts=DATA.accounts||[];
+  while(DATA.accounts.some(a=>a.id===id)){ id=base+k; k++; }
+  const type=(prompt('Type — Bank, Broker, Wallet or Other:','Bank')||'Bank').trim()||'Bank';
+  DATA.accounts.push({id,name,type}); saveLocal(true); toast('Added account: '+name); render();
+}
+function deleteAccount(id){
+  const n=acctRefs(id);
+  const msg = n? ('Account "'+id+'" has '+n+' position(s)/transaction(s). Removing the account will NOT delete those — they will still show under the id "'+id+'". Remove anyway?')
+               : ('Remove account "'+id+'"?');
+  if(!confirm(msg)) return;
+  DATA.accounts=(DATA.accounts||[]).filter(a=>a.id!==id);
+  if(state.account===id) state.account='ALL';
+  saveLocal(true); toast('Removed account '+id); render();
+}
+/* ---- clear everything: totally blank slate ---- */
+function clearAll(){
+  if(!confirm('This ERASES all accounts, positions, cash and transaction history — a totally blank slate. It cannot be undone from here. Continue?')) return;
+  if(!confirm('Last check: wipe EVERYTHING and start from scratch?')) return;
+  DATA={ meta:Object.assign({},DATA.meta,{as_of:today().toISOString().slice(0,10)}),
+         fx:DATA.fx||{}, config:DATA.config||{}, benchmarks:DATA.benchmarks||{},
+         accounts:[], equities_global:[],equities_arg:[],funds:[],bonds_intl:[],bonds_arg:[],
+         structured:[],options:[],futures:[],loans:[],ledger:[],snapshots:[] };
+  state.account='ALL'; saveLocal(true); toast('Blank slate — add your accounts, then positions.'); render();
+}
+/* ---- export an ENCRYPTED portfolio.enc in the browser (matches secure_publish.py) ---- */
+function _u8b64(u){ let s=''; const CH=0x8000; for(let i=0;i<u.length;i+=CH) s+=String.fromCharCode.apply(null,u.subarray(i,i+CH)); return btoa(s); }
+async function exportEncrypted(){
+  let pw = window.__PASSPHRASE || prompt('Enter your dashboard passphrase to encrypt the file:');
+  if(!pw) return;
+  try{
+    const iters=200000, enc=new TextEncoder();
+    const salt=crypto.getRandomValues(new Uint8Array(16)), iv=crypto.getRandomValues(new Uint8Array(12));
+    const base=await crypto.subtle.importKey('raw', enc.encode(pw),'PBKDF2',false,['deriveKey']);
+    const key=await crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:iters,hash:'SHA-256'},base,{name:'AES-GCM',length:256},false,['encrypt']);
+    const ct=new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM',iv},key,enc.encode(JSON.stringify(DATA))));
+    const payload={v:1,iters,salt:_u8b64(salt),iv:_u8b64(iv),ct:_u8b64(ct)};
+    download('portfolio.enc', JSON.stringify(payload,null,1),'application/json');
+    toast('Saved portfolio.enc — upload it to GitHub, then run the refresh workflow.');
+  }catch(e){ toast('Encrypt failed: '+(e.message||e)); }
+}
 function toast(msg){
   let t=document.getElementById('toast');
   if(!t){ t=document.createElement('div'); t.id='toast'; t.style.cssText='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--accent);color:var(--surface);padding:10px 18px;border-radius:10px;font-size:13px;font-weight:600;z-index:99;box-shadow:0 4px 16px rgba(0,0,0,.2)'; document.body.appendChild(t); }
@@ -1266,7 +1313,23 @@ function viewOperations(m){
   const initFields=(OP_SPEC[initClass]||[]).map(opFieldHTML).join('');
   const recent=ledgerRows().reverse().slice(0,8).map(t=>`<tr><td>${t.date}</td><td>${t.type}</td><td><span class="tag">${t.account||''}</span></td><td>${t.instrument}</td>
     <td>${t.ccy}</td><td class="${cls(t.cash_flow)}">${fmtNum(t.cash_flow,t.ccy==='ARS'?0:2)}</td></tr>`).join('');
-  return `<div class="card"><h3>Add a position / record an operation <span class="hint">pick a product type — the form adapts. New instruments (e.g. FOUR, a new bond, a structured note) are created on Buy.</span></h3>
+  const acctList=(DATA.accounts||[]).map((a,i)=>`
+    <div class="ops" style="align-items:end;margin-bottom:6px">
+      <div><label>ID</label><input value="${a.id}" disabled title="fixed once created"></div>
+      <div><label>Name</label><input value="${(a.name||'').replace(/"/g,'&quot;')}" onchange="setAcct(${i},'name',this.value)"></div>
+      <div><label>Type</label><select onchange="setAcct(${i},'type',this.value)">${['Bank','Broker','Wallet','Other'].map(t=>`<option${t===(a.type||'Bank')?' selected':''}>${t}</option>`).join('')}</select></div>
+      <div><button class="btn ghost" style="color:var(--bad);border-color:var(--bad)" onclick="deleteAccount('${a.id}')">Remove</button></div>
+    </div>`).join('') || '<div class="note">No accounts yet — click “Add account”.</div>';
+  return `<div class="card"><h3>Bank accounts &amp; brokers <span class="hint">the accounts your positions belong to — add, rename, or remove</span></h3>
+    ${acctList}
+    <div class="row-actions">
+      <button class="btn primary" onclick="addAccount()">+ Add account</button>
+      <button class="btn primary" onclick="exportEncrypted()">🔒 Save encrypted file (portfolio.enc)</button>
+      <button class="btn ghost" style="color:var(--bad);border-color:var(--bad)" onclick="clearAll()">Clear everything &amp; start fresh</button>
+    </div>
+    <div class="note">Add an account here first, then use the form below to put positions in it. Renames apply everywhere. <b>When you're done making changes, click “Save encrypted file”</b> — it downloads a new <b>portfolio.enc</b>. Upload that one file to your GitHub repo (Add file → Upload files → Commit), then run the <b>Refresh portfolio &amp; publish</b> workflow. Your live link updates a minute later.</div>
+  </div>
+  <div class="card"><h3>Add a position / record an operation <span class="hint">pick a product type — the form adapts. New instruments (e.g. FOUR, a new bond, a structured note) are created on Buy.</span></h3>
     <div class="ops">
       <div><label>Date</label><input type="date" id="opDate" value="${td}"></div>
       <div><label>Type</label><select id="opType" onchange="opAutofill()">
@@ -1283,6 +1346,7 @@ function viewOperations(m){
       <input id="opCash" type="number" step="any" placeholder="signed amount" oninput="this.dataset.touched=1"></div></div>
     <div class="row-actions">
       <button class="btn primary" onclick="addOperation()">+ Add</button>
+      <button class="btn primary" onclick="exportEncrypted()">🔒 Save encrypted file (portfolio.enc)</button>
       <button class="btn" onclick="exportJSON()">⭳ Export data (JSON)</button>
       <button class="btn" onclick="exportLedgerCSV()">⭳ Export ledger (CSV)</button>
       <button class="btn ghost" onclick="saveLocal(false)">Save to browser</button>
