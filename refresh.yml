@@ -93,6 +93,7 @@ jobs:
             echo "nothing changed"
           else
             git commit -m "chore: scheduled refresh $(date -u +%Y-%m-%dT%H:%MZ)"
+            git pull --rebase origin main
             git push
           fi
 
